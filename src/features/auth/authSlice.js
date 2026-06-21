@@ -1,10 +1,10 @@
 
 import { createSlice } from "@reduxjs/toolkit";
-import { removeToken, saveToken } from "../../utils/storage";
+import { getToken, removeToken, saveToken } from "../../utils/storage";
 
 
 const initialState = {
-  token: "jllkjfsdf",
+  token: typeof window !== "undefined" ? getToken() : null,
 };
 
 const authSlice = createSlice({

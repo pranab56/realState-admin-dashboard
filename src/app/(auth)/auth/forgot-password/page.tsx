@@ -11,12 +11,14 @@ import { FormEvent, useState } from 'react';
 import toast from 'react-hot-toast';
 
 import { motion } from 'framer-motion';
+import { useForgotEmailMutation } from '../../../../features/auth/authApi';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState<string>('');
-  const [isLoading, setIsLoading] = useState(false);
+
   const [isSuccess, setIsSuccess] = useState(false);
   const [errors, setErrors] = useState<{ email?: string }>({});
+  const [forgotPassword, { isLoading: isLoadingForgotPassword }] = useForgotEmailMutation();
 
   const router = useRouter();
 
@@ -40,19 +42,18 @@ export default function ForgotPasswordPage() {
       return;
     }
 
-    setIsLoading(true);
-
-    // Simulate API delay
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      const res = await forgotPassword({ email }).unwrap();
+      toast.success(res.message);
       setIsSuccess(true);
-      toast.success('Reset link sent successfully!');
-
-      // Optional: Redirect after success or just show success state
       setTimeout(() => {
         router.push(`/auth/verify-email?email=${encodeURIComponent(email)}`);
       }, 1500);
-    }, 1500);
+    } catch (error: unknown) {
+      const err = error as { data?: { message?: string } };
+      toast.error(err?.data?.message || "Something went wrong");
+    }
+
   };
 
   return (
@@ -84,7 +85,7 @@ export default function ForgotPasswordPage() {
                   setEmail(e.target.value);
                   if (errors.email) setErrors({ ...errors, email: undefined });
                 }}
-                disabled={isLoading || isSuccess}
+                disabled={isLoadingForgotPassword || isSuccess}
                 className={cn(
                   "h-12 bg-[#F9FAFB] border-gray-100 rounded-xl focus-visible:ring-1 transition-all",
                   errors.email ? "focus-visible:ring-red-500 bg-red-50/50" : "focus-visible:ring-[#F1913D] focus-visible:border-[#F1913D]"
@@ -99,10 +100,10 @@ export default function ForgotPasswordPage() {
 
             <Button
               type="submit"
-              disabled={isLoading || isSuccess}
+              disabled={isLoadingForgotPassword || isSuccess}
               className="w-full h-12 bg-[#F1913D] hover:bg-[#F1913D] hover:opacity-80 text-white rounded-xl text-base font-semibold transition-all shadow-lg shadow-orange-200 group mt-2"
             >
-              {isLoading ? 'Sending...' : isSuccess ? 'Code Sent!' : (
+              {isLoadingForgotPassword ? 'Sending...' : isSuccess ? 'Code Sent!' : (
                 <span className="flex items-center gap-2">
                   Send Reset Link <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </span>

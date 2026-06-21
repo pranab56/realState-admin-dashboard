@@ -11,18 +11,21 @@ import { FormEvent, Suspense, useState } from 'react';
 import toast from 'react-hot-toast';
 
 import { motion } from 'framer-motion';
+import { useResetPasswordMutation } from '../../../../features/auth/authApi';
 
 function ResetPasswordContent() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{ password?: string; confirmPassword?: string }>({});
 
   const router = useRouter();
   const searchParams = useSearchParams();
-  console.log(searchParams)
+  const token = searchParams.get("token");
+
+  const [resetPassword, { isLoading }] = useResetPasswordMutation();
+
 
   const validate = () => {
     const newErrors: { password?: string; confirmPassword?: string } = {};
@@ -50,18 +53,19 @@ function ResetPasswordContent() {
       return;
     }
 
-    setIsLoading(true);
 
-    // Simulate API delay
-    setTimeout(() => {
-      setIsLoading(false);
-      toast.success('Password reset successfully!');
-
-      // Redirect to login
+    try {
+      const res = await resetPassword({ token, newPassword: password, confirmPassword: confirmPassword }).unwrap();
+      toast.success(res.message);
       setTimeout(() => {
         router.push('/auth/login');
       }, 1500);
-    }, 1500);
+    } catch (error: unknown) {
+      const err = error as { data?: { message?: string } };
+      toast.error(err?.data?.message || "Something went wrong");
+    }
+
+
   };
 
   return (

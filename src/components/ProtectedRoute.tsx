@@ -11,17 +11,11 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   const router = useRouter();
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      const token = localStorage.getItem("PharmacyAdmin");
+    const token = localStorage.getItem("zila-admin-token");
 
-
-      if (!token || token === null) {
-        router.replace("/auth/login");
-      }
-
-    }, 2000); // ⏱️ 2 seconds
-
-    return () => clearTimeout(timer);
+    if (!token) {
+      router.replace("/auth/login");
+    }
   }, [router]);
 
 

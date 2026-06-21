@@ -1,7 +1,6 @@
 "use client";
 
 import { Card } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Table,
   TableBody,
@@ -10,35 +9,76 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useGetRevenueQuery } from "@/features/revenue/revenueApi";
+
+import { format } from "date-fns";
 import { motion } from "framer-motion";
 import {
-  CalendarCheck,
+  AlertCircle,
+  Briefcase,
   ChevronLeft,
   ChevronRight,
+  Clock,
+  DollarSign,
+  Eye
 } from "lucide-react";
 import { useState } from "react";
+import { CustomLoading } from '../../hooks/CustomLoading';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 
-/* ── Stat cards ─────────────────────────────────────────────── */
-const stats = [
-  { label: "Total Revenue", value: "ETB250,00", icon: CalendarCheck, bgColor: "#E8F5E9", color: "#2B9724" },
-  { label: "Pending Payouts", value: "ETB250,00", icon: CalendarCheck, bgColor: "#E8F5E9", color: "#2B9724" },
-  { label: "Platform Commissions", value: "ETB250,00", icon: CalendarCheck, bgColor: "#E8F5E9", color: "#2B9724" },
-  { label: "Active Disputes", value: "14", icon: CalendarCheck, bgColor: "#FEE2E2", color: "#DC3545" },
+const STAT_META = [
+  { label: "Total Revenue", icon: DollarSign, bgColor: "#E8F5E9", color: "#2B9724" },
+  { label: "Pending Payouts", icon: Clock, bgColor: "#FEF0E4", color: "#F1913D" },
+  { label: "Platform Commissions", icon: Briefcase, bgColor: "#E3F2FD", color: "#1976D2" },
+  { label: "Active Disputes", icon: AlertCircle, bgColor: "#FEE2E2", color: "#DC3545" },
 ];
 
-/* ── Status badge ────────────────────────────────────────────── */
-type Status = "Active" | "Pending" | "Refunded";
+interface User {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  uid?: string;
+}
 
-function StatusBadge({ status }: { status: Status }) {
-  if (status === "Active") {
+interface Pricing {
+  currency?: string;
+  pricePerUnit?: number;
+  units?: number;
+  serviceFee?: number;
+  total?: number;
+}
+
+interface Reference {
+  type?: string;
+  id?: { pricing?: Pricing };
+}
+
+interface Transaction {
+  _id: string;
+  user?: User;
+  createdAt?: string;
+  type?: string;
+  paymentMethod?: string;
+  amount?: number;
+  currency?: string;
+  reference?: Reference;
+  status?: string;
+  isPaid?: boolean;
+  platformFee?: number;
+}
+
+/* ── Status badge ─────────────────────────────────────────────── */
+function StatusBadge({ status }: { status?: string }) {
+  const s = status?.toLowerCase() || "";
+  if (s === "completed" || s === "active" || s === "paid") {
     return (
       <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold"
         style={{ backgroundColor: "#E8F5E9", color: "#2B9724" }}>
-        Active
+        Completed
       </span>
     );
   }
-  if (status === "Pending") {
+  if (s === "pending") {
     return (
       <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold"
         style={{ backgroundColor: "#FEF0E4", color: "#F1913D" }}>
@@ -49,46 +89,62 @@ function StatusBadge({ status }: { status: Status }) {
   return (
     <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold"
       style={{ backgroundColor: "#FEE2E2", color: "#DC3545" }}>
-      Refunded
+      {status || "Unknown"}
     </span>
   );
 }
 
-/* ── Dummy rows ─────────────────────────────────────────────── */
-const transactions = Array.from({ length: 9 }, (_, i) => ({
-  id: i + 1,
-  date: "Oct 24, 2023",
-  txnId: "TXN-88294",
-  type: "Property",
-  amount: "ETB250,00",
-  commission: "ETB250,00",
-  status: (["Active", "Pending", "Refunded", "Active", "Active", "Pending", "Active", "Refunded", "Active"] as Status[])[i],
-}));
-
-const TOTAL = 240;
-const PER_PAGE = 9;
-const LAST_PG = Math.ceil(TOTAL / PER_PAGE);
-const PAGES = [1, 2, 3, "...", LAST_PG];
-
 /* ── Main component ──────────────────────────────────────────── */
 export default function RevenueManagement() {
   const [page, setPage] = useState(1);
-  const [selected, setSelected] = useState<number[]>([]);
+  const [selectedTxn, setSelectedTxn] = useState<Transaction | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const toggleAll = () =>
-    setSelected(selected.length === transactions.length ? [] : transactions.map((p) => p.id));
+  const { data: revenueData, isLoading, isError } = useGetRevenueQuery({ page });
 
-  const toggle = (id: number) =>
-    setSelected((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
+  const transactions = revenueData?.data || [];
+  const pagination = revenueData?.pagination || { total: 0, limit: 10, page: 1, totalPage: 1 };
+
+  const handleViewDetails = (txn: Transaction) => {
+    setSelectedTxn(txn);
+    setIsModalOpen(true);
+  };
+
+  if (isLoading) return <CustomLoading />;
+  if (isError) return <div className="p-10 text-center text-red-500">Failed to load revenue data</div>;
+
+  const TOTAL = pagination.total;
+  const PER_PAGE = pagination.limit;
+  const LAST_PG = pagination.totalPage;
+  const PAGES = Array.from({ length: LAST_PG }, (_, i) => i + 1);
+
+  // ── Computed stat values from API data ──────────────────────
+  const totalRevenue = transactions
+    .filter((t: Transaction) => t.isPaid && t.status === "completed")
+    .reduce((sum: number, t: Transaction) => sum + (t.amount || 0), 0);
+
+  const pendingPayouts = transactions
+    .filter((t: Transaction) => !t.isPaid || t.status === "pending")
+    .reduce((sum: number, t: Transaction) => sum + (t.amount || 0), 0);
+
+  const platformCommissions = transactions
+    .filter((t: Transaction) => t.platformFee != null)
+    .reduce((sum: number, t: Transaction) => sum + (t.platformFee || 0), 0);
+
+  const activeDisputes = transactions
+    .filter((t: Transaction) => t.status === "cancelled").length;
+
+  const currency = transactions[0]?.currency || "USD";
+  const fmt = (n: number) => `${currency} ${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+  const statValues = [fmt(totalRevenue), fmt(pendingPayouts), fmt(platformCommissions), String(activeDisputes)];
 
   return (
     <div className="space-y-6">
 
       {/* ── Stat Cards ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((s, i) => {
+        {STAT_META.map((s, i) => {
           const Icon = s.icon;
           return (
             <motion.div
@@ -105,7 +161,7 @@ export default function RevenueManagement() {
                   <Icon className="w-5 h-5" style={{ color: s.color }} />
                 </div>
                 <p className="text-sm font-medium" style={{ color: "#6C757D" }}>{s.label}</p>
-                <p className="text-2xl font-bold" style={{ color: "#2C2E33" }}>{s.value}</p>
+                <p className="text-2xl font-bold" style={{ color: "#2C2E33" }}>{statValues[i]}</p>
               </Card>
             </motion.div>
           );
@@ -130,72 +186,96 @@ export default function RevenueManagement() {
             <Table>
               <TableHeader>
                 <TableRow style={{ borderColor: "#F2F2F2" }}>
-                  <TableHead className="w-10 pl-6">
-                    <Checkbox
-                      checked={selected.length === transactions.length}
-                      onCheckedChange={toggleAll}
-                    />
-                  </TableHead>
-                  <TableHead className="text-xs font-semibold" style={{ color: "#6C757D" }}>
-                    Partner Name
+                  <TableHead className="text-xs font-semibold pl-6" style={{ color: "#6C757D" }}>
+                    Customer / Date
                   </TableHead>
                   <TableHead className="text-xs font-semibold" style={{ color: "#6C757D" }}>
                     Transaction ID
                   </TableHead>
                   <TableHead className="text-xs font-semibold" style={{ color: "#6C757D" }}>
-                    Type
+                    Type / Method
                   </TableHead>
                   <TableHead className="text-xs font-semibold" style={{ color: "#6C757D" }}>
                     Amount
                   </TableHead>
                   <TableHead className="text-xs font-semibold" style={{ color: "#6C757D" }}>
-                    Commission
+                    Reference
                   </TableHead>
                   <TableHead className="text-xs font-semibold" style={{ color: "#6C757D" }}>
                     Status
+                  </TableHead>
+                  <TableHead className="text-xs font-semibold text-center" style={{ color: "#6C757D" }}>
+                    Action
                   </TableHead>
                 </TableRow>
               </TableHeader>
 
               <TableBody>
-                {transactions.map((t) => (
-                  <TableRow
-                    key={t.id}
-                    style={{ borderColor: "#F2F2F2" }}
-                    className="hover:bg-gray-50/60 transition-colors"
-                  >
-                    <TableCell className="pl-6">
-                      <Checkbox
-                        checked={selected.includes(t.id)}
-                        onCheckedChange={() => toggle(t.id)}
-                      />
-                    </TableCell>
-
-                    <TableCell>
-                      <span className="text-sm" style={{ color: "#2C2E33" }}>{t.date}</span>
-                    </TableCell>
-
-                    <TableCell>
-                      <span className="text-sm font-semibold" style={{ color: "#2C2E33" }}>{t.txnId}</span>
-                    </TableCell>
-
-                    <TableCell>
-                      <span className="text-sm" style={{ color: "#2C2E33" }}>{t.type}</span>
-                    </TableCell>
-
-                    <TableCell>
-                      <span className="text-sm font-semibold" style={{ color: "#2C2E33" }}>{t.amount}</span>
-                    </TableCell>
-
-                    <TableCell>
-                      <span className="text-sm" style={{ color: "#2C2E33" }}>{t.commission}</span>
-                    </TableCell>
-
-                    <TableCell>
-                      <StatusBadge status={t.status} />
+                {transactions.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-10 text-gray-500">
+                      No transactions found
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  transactions.map((t: Transaction) => (
+                    <TableRow
+                      key={t._id}
+                      style={{ borderColor: "#F2F2F2" }}
+                      className="hover:bg-gray-50/60 transition-colors"
+                    >
+                      <TableCell className="pl-6">
+                        <div className="flex flex-col">
+                          <span className="text-sm font-semibold" style={{ color: "#2C2E33" }}>
+                            {t.user?.firstName} {t.user?.lastName}
+                          </span>
+                          <span className="text-xs text-gray-400">
+                            {t.createdAt ? format(new Date(t.createdAt), "MMM dd, yyyy") : "N/A"}
+                          </span>
+                        </div>
+                      </TableCell>
+
+                      <TableCell>
+                        <span className="text-sm font-medium truncate max-w-[120px] block" style={{ color: "#2C2E33" }} title={t._id}>
+                          {t._id}
+                        </span>
+                      </TableCell>
+
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span className="text-sm capitalize" style={{ color: "#2C2E33" }}>{t.type}</span>
+                          <span className="text-xs text-gray-400 capitalize">{t.paymentMethod}</span>
+                        </div>
+                      </TableCell>
+
+                      <TableCell>
+                        <span className="text-sm font-bold" style={{ color: "#2C2E33" }}>
+                          {t.currency} {t.amount?.toLocaleString() || 0}
+                        </span>
+                      </TableCell>
+
+                      <TableCell>
+                        <span className="text-sm" style={{ color: "#2C2E33" }}>
+                          {t.reference?.type || "N/A"}
+                        </span>
+                      </TableCell>
+
+                      <TableCell>
+                        <StatusBadge status={t.status} />
+                      </TableCell>
+
+                      <TableCell className="text-center">
+                        <button
+                          onClick={() => handleViewDetails(t)}
+                          className="p-2 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer text-[#F1913D]"
+                          title="View Details"
+                        >
+                          <Eye className="w-5 h-5" />
+                        </button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </div>
@@ -208,7 +288,7 @@ export default function RevenueManagement() {
             <p className="text-sm" style={{ color: "#6C757D" }}>
               Showing{" "}
               <span className="font-semibold" style={{ color: "#2C2E33" }}>
-                {(page - 1) * PER_PAGE + 1}–{Math.min(page * PER_PAGE, TOTAL)}
+                {TOTAL === 0 ? 0 : (page - 1) * PER_PAGE + 1}–{Math.min(page * PER_PAGE, TOTAL)}
               </span>{" "}
               of{" "}
               <span className="font-semibold" style={{ color: "#2C2E33" }}>{TOTAL}</span>{" "}
@@ -225,28 +305,24 @@ export default function RevenueManagement() {
                 <ChevronLeft className="w-4 h-4" /> Previous
               </button>
 
-              {PAGES.map((p, i) =>
-                p === "..." ? (
-                  <span key={i} className="px-1 text-sm" style={{ color: "#6C757D" }}>...</span>
-                ) : (
-                  <button
-                    key={i}
-                    onClick={() => setPage(Number(p))}
-                    className="w-8 h-8 text-sm rounded-lg font-medium transition-colors cursor-pointer"
-                    style={
-                      page === p
-                        ? { backgroundColor: "#F1913D", color: "#FFFFFF" }
-                        : { color: "#2C2E33", backgroundColor: "transparent" }
-                    }
-                  >
-                    {p}
-                  </button>
-                )
-              )}
+              {PAGES.map((p, i) => (
+                <button
+                  key={i}
+                  onClick={() => setPage(Number(p))}
+                  className="w-8 h-8 text-sm rounded-lg font-medium transition-colors cursor-pointer"
+                  style={
+                    page === p
+                      ? { backgroundColor: "#F1913D", color: "#FFFFFF" }
+                      : { color: "#2C2E33", backgroundColor: "transparent" }
+                  }
+                >
+                  {p}
+                </button>
+              ))}
 
               <button
                 onClick={() => setPage((p) => Math.min(LAST_PG, p + 1))}
-                disabled={page === LAST_PG}
+                disabled={page === LAST_PG || LAST_PG === 0}
                 className="flex items-center gap-1 px-3 h-8 text-sm rounded-lg disabled:opacity-40 cursor-pointer hover:bg-gray-100 transition-colors"
                 style={{ color: "#2C2E33" }}
               >
@@ -257,6 +333,103 @@ export default function RevenueManagement() {
 
         </Card>
       </motion.div>
+
+      {/* ── Details Modal ── */}
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">Transaction Details</DialogTitle>
+          </DialogHeader>
+
+          {selectedTxn && (
+            <div className="space-y-6 py-4">
+              {/* Top Summary */}
+              <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-xl">
+                <div>
+                  <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">Amount</p>
+                  <p className="text-2xl font-bold text-[#F1913D]">{selectedTxn.currency} {selectedTxn.amount?.toLocaleString() || 0}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">Status</p>
+                  <StatusBadge status={selectedTxn.status} />
+                </div>
+              </div>
+
+              {/* Information Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900 mb-1">Transaction Information</p>
+                    <div className="space-y-2">
+                      <div className="flex justify-between border-b pb-1">
+                        <span className="text-sm text-gray-500">Transaction ID</span>
+                        <span className="text-sm font-medium">{selectedTxn._id}</span>
+                      </div>
+                      <div className="flex justify-between border-b pb-1">
+                        <span className="text-sm text-gray-500">Date</span>
+                        <span className="text-sm font-medium">{selectedTxn.createdAt ? format(new Date(selectedTxn.createdAt), "PPP p") : "N/A"}</span>
+                      </div>
+                      <div className="flex justify-between border-b pb-1">
+                        <span className="text-sm text-gray-500">Type</span>
+                        <span className="text-sm font-medium capitalize">{selectedTxn.type}</span>
+                      </div>
+                      <div className="flex justify-between border-b pb-1">
+                        <span className="text-sm text-gray-500">Payment Method</span>
+                        <span className="text-sm font-medium capitalize">{selectedTxn.paymentMethod}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900 mb-1">Customer Details</p>
+                    <div className="space-y-2">
+                      <div className="flex justify-between border-b pb-1">
+                        <span className="text-sm text-gray-500">Name</span>
+                        <span className="text-sm font-medium">{selectedTxn.user?.firstName} {selectedTxn.user?.lastName}</span>
+                      </div>
+                      <div className="flex justify-between border-b pb-1">
+                        <span className="text-sm text-gray-500">Email</span>
+                        <span className="text-sm font-medium">{selectedTxn.user?.email}</span>
+                      </div>
+                      <div className="flex justify-between border-b pb-1">
+                        <span className="text-sm text-gray-500">User ID</span>
+                        <span className="text-sm font-medium">{selectedTxn.user?.uid}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Reference details if Reservation */}
+              {selectedTxn.reference?.type === "Reservation" && selectedTxn.reference.id?.pricing && (
+                <div className="bg-[#FEF0E4]/30 p-4 rounded-xl border border-[#F1913D]/20">
+                  <p className="text-sm font-bold text-[#F1913D] mb-3">Reservation Pricing Details</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div>
+                      <span className="text-xs text-gray-500 block">Base Price</span>
+                      <span className="text-sm font-bold">{selectedTxn.reference.id.pricing.currency} {selectedTxn.reference.id.pricing.pricePerUnit}</span>
+                    </div>
+                    <div>
+                      <span className="text-xs text-gray-500 block">Units/Nights</span>
+                      <span className="text-sm font-bold">{selectedTxn.reference.id.pricing.units}</span>
+                    </div>
+                    <div>
+                      <span className="text-xs text-gray-500 block">Service Fee</span>
+                      <span className="text-sm font-bold">{selectedTxn.reference.id.pricing.currency} {selectedTxn.reference.id.pricing.serviceFee}</span>
+                    </div>
+                    <div>
+                      <span className="text-xs text-gray-500 block">Total</span>
+                      <span className="text-sm font-bold">{selectedTxn.reference.id.pricing.currency} {selectedTxn.reference.id.pricing.total}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

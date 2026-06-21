@@ -2,7 +2,6 @@
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -47,16 +46,7 @@ const PAGES = [1, 2, 3, "...", LAST_PG];
 export default function ContentManagement() {
   const [tab, setTab] = useState<Tab>("Blog Posts");
   const [page, setPage] = useState(1);
-  const [selected, setSelected] = useState<number[]>([]);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-
-  const toggleAll = () =>
-    setSelected(selected.length === content.length ? [] : content.map((c) => c.id));
-
-  const toggle = (id: number) =>
-    setSelected((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
 
   return (
     <div className="space-y-6">
@@ -92,7 +82,7 @@ export default function ContentManagement() {
             {TABS.map((t) => (
               <button
                 key={t}
-                onClick={() => { setTab(t); setPage(1); setSelected([]); }}
+                onClick={() => { setTab(t); setPage(1); }}
                 className="pb-4 text-base font-semibold relative cursor-pointer whitespace-nowrap transition-colors"
                 style={{ color: tab === t ? "#2C2E33" : "#6C757D" }}
               >
@@ -112,13 +102,7 @@ export default function ContentManagement() {
             <Table>
               <TableHeader>
                 <TableRow style={{ borderColor: "#F2F2F2" }}>
-                  <TableHead className="w-10 pl-6">
-                    <Checkbox
-                      checked={selected.length === content.length}
-                      onCheckedChange={toggleAll}
-                    />
-                  </TableHead>
-                  <TableHead className="text-xs font-semibold" style={{ color: "#6C757D" }}>Page Title</TableHead>
+                  <TableHead className="text-xs font-semibold pl-6" style={{ color: "#6C757D" }}>Page Title</TableHead>
                   <TableHead className="text-xs font-semibold" style={{ color: "#6C757D" }}>Status</TableHead>
                   <TableHead className="text-xs font-semibold" style={{ color: "#6C757D" }}>Type</TableHead>
                   <TableHead className="text-xs font-semibold" style={{ color: "#6C757D" }}>Last Updated</TableHead>
@@ -133,13 +117,6 @@ export default function ContentManagement() {
                     className="hover:bg-gray-50/60 transition-colors"
                   >
                     <TableCell className="pl-6">
-                      <Checkbox
-                        checked={selected.includes(c.id)}
-                        onCheckedChange={() => toggle(c.id)}
-                      />
-                    </TableCell>
-
-                    <TableCell>
                       <div>
                         <p className="text-sm font-semibold" style={{ color: "#2C2E33" }}>{c.title}</p>
                         <p className="text-xs" style={{ color: "#6C757D" }}>{c.slug}</p>

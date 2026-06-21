@@ -7,18 +7,17 @@ import { motion } from 'framer-motion';
 import { ArrowRight, Eye, EyeOff } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { FormEvent, useState } from 'react';
 import toast from 'react-hot-toast';
+import { useLoginMutation } from '../../../../features/auth/authApi';
+import { saveToken } from '../../../../utils/storage';
 
 export default function LoginPage() {
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [showPassword, setShowPassword] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
-
-  const router = useRouter();
+  const [login, { isLoading }] = useLoginMutation();
 
   const validate = () => {
     const newErrors: { email?: string; password?: string } = {};
@@ -46,14 +45,18 @@ export default function LoginPage() {
       return;
     }
 
-    setIsLoading(true);
+    try {
+      const res = await login({ email, password }).unwrap();
+      toast.success(res.message);
+      saveToken(res?.data?.accessToken);
+      localStorage.setItem("role", res?.data?.role);
+      // Hard redirect so the middleware reads the freshly-set cookie on the new request
+      window.location.href = '/';
+    } catch (error: unknown) {
+      const err = error as { data?: { message?: string } };
+      toast.error(err?.data?.message || "Failed to login");
+    }
 
-    // Simulate login delay
-    setTimeout(() => {
-      setIsLoading(false);
-      toast.success('Login successful!');
-      router.push('/');
-    }, 1500);
   };
 
   return (

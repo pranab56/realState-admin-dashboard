@@ -10,19 +10,32 @@ import { ArrowLeft, ArrowRight } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 
 import { motion } from 'framer-motion';
+import { useForgotEmailOTPCheckMutation, useResendPasswordMutation } from '../../features/auth/authApi';
 
 export default function VerifyEmail() {
   const [otp, setOtp] = useState<string>('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [isResending, setIsResending] = useState(false);
+  const [countdown, setCountdown] = useState<number>(0);
+  const [otpCheck, { isLoading: isLoadingOTPCheck }] = useForgotEmailOTPCheckMutation();
+
+  const [resendOTP, { isLoading: isLoadingResendOTP }] = useResendPasswordMutation();
 
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get('email');
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (countdown > 0) {
+      timer = setInterval(() => {
+        setCountdown((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [countdown]);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -32,28 +45,28 @@ export default function VerifyEmail() {
       return;
     }
 
-    setIsLoading(true);
-
-    // Simulate API delay
-    setTimeout(() => {
-      setIsLoading(false);
-      toast.success('Email verified successfully!');
-
-      // Redirect to Reset Password
-      setTimeout(() => {
-        router.push('/auth/reset-password');
-      }, 1000);
-    }, 1500);
+    try {
+      const res = await otpCheck({ email: email!, oneTimeCode: parseInt(otp) }).unwrap();
+      toast.success(res.message);
+      router.push(`/auth/reset-password?token=${res?.data}`);
+    } catch (error: unknown) {
+      const err = error as { data?: { message?: string } };
+      toast.error(err?.data?.message || "Verification failed");
+    }
   };
 
-  const handleResend = () => {
-    setIsResending(true);
-    // Simulate resend
-    setTimeout(() => {
-      setIsResending(false);
-      toast.success('Verification code resent!');
-    }, 2000);
-  }
+  const handleResend = async () => {
+    if (countdown > 0) return;
+
+    try {
+      const response = await resendOTP({ email: email }).unwrap();
+      toast.success(response.message);
+      setCountdown(60); // Set 60 seconds cooldown
+    } catch (error: unknown) {
+      const err = error as { data?: { message?: string } };
+      toast.error(err?.data?.message || "Verification code resent failed");
+    }
+  };
 
   return (
     <div className="flex min-h-screen bg-[#F8F7FC] font-sans items-center justify-center p-4">
@@ -94,10 +107,10 @@ export default function VerifyEmail() {
 
             <Button
               type="submit"
-              disabled={isLoading || otp.length !== 6}
+              disabled={isLoadingOTPCheck || otp.length !== 6}
               className="w-full h-12 bg-[#F1913D] hover:bg-[#F1913D] hover:opacity-80 text-white rounded-xl text-base font-semibold transition-all shadow-lg shadow-orange-200 group"
             >
-              {isLoading ? 'Verifying...' : (
+              {isLoadingOTPCheck ? 'Verifying...' : (
                 <span className="flex items-center gap-2">
                   Verify Code <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </span>
@@ -109,10 +122,10 @@ export default function VerifyEmail() {
               <button
                 type="button"
                 onClick={handleResend}
-                disabled={isResending}
-                className="text-[#F1913D] font-semibold hover:underline disabled:opacity-50"
+                disabled={isLoadingResendOTP || countdown > 0}
+                className="text-[#F1913D] font-semibold cursor-pointer hover:underline disabled:opacity-50 disabled:no-underline"
               >
-                {isResending ? 'Sending...' : 'Resend'}
+                {isLoadingResendOTP ? 'Sending...' : countdown > 0 ? `Resend in ${countdown}s` : 'Resend'}
               </button>
             </div>
           </form>

@@ -4,14 +4,21 @@ import { Card, CardContent } from "@/components/ui/card";
 import { motion } from "framer-motion";
 import { User } from "lucide-react";
 
-const segments = [
-  { label: "Customers", count: 24400, color: "#2C2E33", pct: 100 },
-  { label: "Customers", count: 12120, color: "#4A90D9", pct: 50 },
-  { label: "Customers", count: 5280, color: "#F1913D", pct: 22 },
-  { label: "Customers", count: 1040, color: "#9B85C4", pct: 4 },
-];
+interface BarChartProps {
+  userDistribution?: { _id: string; count: number }[];
+  totalUsers?: number;
+}
 
-export default function BarChart() {
+const COLORS = ["#2C2E33", "#F1913D", "#4A90D9", "#9B85C4"];
+
+export default function BarChart({ userDistribution = [], totalUsers = 0 }: BarChartProps) {
+  const segments = userDistribution.map((item, i) => ({
+    label: item._id.charAt(0).toUpperCase() + item._id.slice(1),
+    count: item.count,
+    color: COLORS[i % COLORS.length],
+    pct: totalUsers > 0 ? (item.count / totalUsers) * 100 : 0
+  }));
+
   return (
     <motion.div
       initial={{ opacity: 0, x: -20 }}
@@ -60,8 +67,8 @@ export default function BarChart() {
               <User className="w-5 h-5" style={{ color: "#6C757D" }} />
             </div>
             <div>
-              <p className="text-xs font-medium" style={{ color: "#6C757D" }}>Monthly Active</p>
-              <p className="text-base font-bold" style={{ color: "#2C2E33" }}>94.2% Retention</p>
+              <p className="text-xs font-medium" style={{ color: "#6C757D" }}>Total Users</p>
+              <p className="text-base font-bold" style={{ color: "#2C2E33" }}>{totalUsers} Registered</p>
             </div>
           </div>
         </CardContent>

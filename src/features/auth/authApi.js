@@ -14,41 +14,34 @@ export const authApi = baseApi.injectEndpoints({
 
     forgotEmail: builder.mutation({
       query: (forgotEmail) => ({
-        url: "/auth/forgot-password-otp",
+        url: "/auth/generate-otp",
         method: "POST",
         body: forgotEmail,
       }),
     }),
 
     forgotEmailOTPCheck: builder.mutation({
-      query: ({ otp, token }) => ({
-        url: "/auth/forgot-password-otp-match",
-        method: "PATCH",
-        headers: {
-          token: token,
-          "Content-Type": "application/json"
-        },
-        body: { otp },  // <-- must be an object
+      query: (data) => ({
+        url: "/auth/verify-email",
+        method: "POST",
+        body: data,
       }),
     }),
 
     resendPassword: builder.mutation({
-      query: (token) => ({
-        url: "/otp/resend-otp",
-        method: "PATCH",
-        headers: {
-          token: token,
-          "Content-Type": "application/json"
-        },
+      query: (data) => ({
+        url: "/auth/generate-otp",
+        method: "POST",
+        body: data,
       }),
     }),
 
     resetPassword: builder.mutation({
       query: ({ token, newPassword, confirmPassword }) => ({
-        url: "/auth/forgot-password-reset",
-        method: "PATCH",
+        url: "/auth/reset-password",
+        method: "POST",
         headers: {
-          token: `${token}`,
+          Authorization: `${token}`,
           "Content-Type": "application/json"
         },
         body: {

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 // import { Geist, Geist_Mono } from "next/font/google";
 import OptimusSidebar from "@/components/appSidebar/AppsideBar";
 import Header from "@/components/header/Header";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import "../globals.css";
 
@@ -20,15 +21,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    // <AuthGuard>
-    // <CrossTabLogoutHandler />
-    <SidebarProvider>
-      <OptimusSidebar />
-      <SidebarInset className="bg-gray-100 flex flex-col overflow-hidden h-screen">
-        <Header />
-        <main className="flex-1 p-2 md:p-6 overflow-y-auto min-w-0 flex flex-col">{children}</main>
-      </SidebarInset>
-    </SidebarProvider>
-    // </AuthGuard>
+    <ProtectedRoute>
+      <SidebarProvider>
+        <OptimusSidebar />
+        <SidebarInset className="bg-gray-100 flex flex-col overflow-hidden h-screen">
+          <Header />
+          <main className="flex-1 p-2 md:p-6 overflow-y-auto min-w-0 flex flex-col">{children}</main>
+        </SidebarInset>
+      </SidebarProvider>
+    </ProtectedRoute>
   );
 }

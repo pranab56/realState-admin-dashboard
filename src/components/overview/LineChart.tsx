@@ -18,22 +18,17 @@ import {
   YAxis,
 } from "recharts";
 
-const data = [
-  { month: "JAN", value: 18000 },
-  { month: "FEB", value: 42000 },
-  { month: "MAR", value: 28000 },
-  { month: "APR", value: 55000 },
-  { month: "MAY", value: 38000 },
-  { month: "JUN", value: 25000 },
-  { month: "JUL", value: 32000 },
-  { month: "AUG", value: 72000 },
-  { month: "SEP", value: 15000 },
-  { month: "OCT", value: 48000 },
-  { month: "NOV", value: 62000 },
-  { month: "DEC", value: 35000 },
-];
+interface LineChartProps {
+  revenueGrowth?: { month: string; revenue: number }[];
+}
 
-export default function LineChart() {
+export default function LineChart({ revenueGrowth = [] }: LineChartProps) {
+  // Ensure we use the API data or fallback to an empty array
+  const chartData = revenueGrowth.map(item => ({
+    month: item.month.toUpperCase(),
+    value: item.revenue
+  }));
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -67,7 +62,7 @@ export default function LineChart() {
 
         <CardContent className="px-2 pb-4 pt-4">
           <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={data} margin={{ top: 10, right: 30, left: 30, bottom: 30 }}>
+            <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 30, bottom: 30 }}>
               <defs>
                 <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#F1913D" stopOpacity={0.35} />
@@ -84,7 +79,7 @@ export default function LineChart() {
                 interval={0}
                 padding={{ left: 10, right: 10 }}
               />
-              <YAxis hide domain={["dataMin - 5000", "dataMax + 10000"]} />
+              <YAxis hide domain={["dataMin", "dataMax + 1000"]} />
 
 
               <Tooltip
@@ -95,7 +90,7 @@ export default function LineChart() {
                   padding: "8px 14px",
                   fontSize: "13px",
                 }}
-                formatter={(value: number) => [`ETB ${value.toLocaleString()}`, "Revenue"]}
+                formatter={(value: number) => [`$ ${value.toLocaleString()}`, "Revenue"]}
                 cursor={{ stroke: "#F1913D", strokeWidth: 1, strokeDasharray: "4 4" }}
               />
 

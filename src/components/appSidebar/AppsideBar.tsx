@@ -15,25 +15,31 @@ import {
   SidebarMenuSubItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { logout } from "@/features/auth/authSlice";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Building2,
+  Car,
+  CircleDollarSign,
   FileText,
   Handshake,
+  Inbox,
   LayoutDashboard,
   LogOut,
   LucideIcon,
-  MessageSquare,
-  Settings,
-  TrendingUp,
+  Scale,
+  ScrollText,
+  Star,
   User,
-  Users,
+  Users
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
+import { useDispatch } from "react-redux";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
 
 type MenuItem = {
   name: string;
@@ -45,32 +51,50 @@ type MenuItem = {
 const menuItems: MenuItem[] = [
   { name: "Overview", path: "/", icon: LayoutDashboard },
   {
-    name: "Property Manage...", path: "/property-management", icon: Building2,
+    name: "Property Management", path: "/property-management", icon: Building2,
     children: [
-      { name: "Property Listing", path: "/property-management/listing" },
-      { name: "Add New Property", path: "/property-management/add" },
+      { name: "Manage Listing ", path: "/property-management/listing" },
+      { name: "Manage Hotels", path: "/property-management/hotel" },
     ],
   },
   {
-    name: "Customers Manage...", path: "/user-management", icon: Users
+    name: "Customers Management", path: "/user-management", icon: Users
   },
   {
-    name: "Partner Manage...", path: "/partner-management", icon: Handshake
-  },
-  { name: "Message", path: "/messages", icon: MessageSquare },
-  {
-    name: "Revenue Manage...", path: "/revenue-management", icon: TrendingUp
+    name: "Partner Management", path: "/partner-management", icon: Handshake
   },
   {
-    name: "Content Manage...", path: "/content-management", icon: FileText
+    name: "Transportation Management", path: "/transportation", icon: Car
   },
-  { name: "Platform Settings", path: "/platform-settings", icon: Settings },
+  {
+    name: "POA Management", path: "/poa", icon: Scale
+  },
+  {
+    name: "Revenue Management", path: "/revenue-management", icon: CircleDollarSign
+  },
+  {
+    name: "Inquiries Management", path: "/inquiries", icon: Inbox
+  },
+  {
+    name: "Review Management", path: "/review", icon: Star
+  },
+  {
+    name: "Blog Management", path: "/blog-management", icon: FileText
+  },
   { name: "Profile", path: "/profile", icon: User },
+  {
+    name: "Disclaimer", path: "/disclaimer", icon: ScrollText,
+    children: [
+      { name: "Privacy Policy",       path: "/disclaimer/privacy-policy" },
+      { name: "Terms & Condition",    path: "/disclaimer/terms-and-condition" },
+    ],
+  },
 ];
 
 export default function AppSideBar() {
   const pathname = usePathname();
   const router = useRouter();
+  const dispatch = useDispatch();
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
 
@@ -84,6 +108,7 @@ export default function AppSideBar() {
     .map((item) => item.name);
 
   const [openItems, setOpenItems] = useState<string[]>(defaultOpen);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
   const toggleItem = (name: string) => {
     setOpenItems((prev) =>
@@ -97,6 +122,7 @@ export default function AppSideBar() {
   };
 
   const handleLogout = () => {
+    dispatch(logout());
     router.push("/auth/login");
   };
 
@@ -254,7 +280,7 @@ export default function AppSideBar() {
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            onClick={handleLogout}
+            onClick={() => setIsLogoutModalOpen(true)}
             title={isCollapsed ? "Logout" : undefined}
             className={cn(
               "w-full h-11 text-white rounded-xl font-medium flex items-center justify-center gap-2 transition-colors duration-150 cursor-pointer overflow-hidden whitespace-nowrap shadow-md",
@@ -273,6 +299,26 @@ export default function AppSideBar() {
           </motion.button>
         </SidebarFooter>
       </SidebarContent>
+
+      <AlertDialog open={isLogoutModalOpen} onOpenChange={setIsLogoutModalOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure you want to logout?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You will be redirected to the login page and your session will be cleared.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleLogout}
+              className="bg-[#DC3545] hover:bg-[#c82333] text-white"
+            >
+              Logout
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Sidebar>
   );
 }
