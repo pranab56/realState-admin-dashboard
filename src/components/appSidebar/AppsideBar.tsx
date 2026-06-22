@@ -85,8 +85,8 @@ const menuItems: MenuItem[] = [
   {
     name: "Disclaimer", path: "/disclaimer", icon: ScrollText,
     children: [
-      { name: "Privacy Policy",       path: "/disclaimer/privacy-policy" },
-      { name: "Terms & Condition",    path: "/disclaimer/terms-and-condition" },
+      { name: "Privacy Policy", path: "/disclaimer/privacy-policy" },
+      { name: "Terms & Condition", path: "/disclaimer/terms-and-condition" },
     ],
   },
 ];
@@ -130,7 +130,7 @@ export default function AppSideBar() {
     <Sidebar collapsible="icon" className="border-none">
       {/* ── Main panel ── */}
       <SidebarContent
-        className="flex flex-col h-full overflow-hidden"
+        className="flex flex-col h-screen"
         style={{ backgroundColor: "#2C2E33", color: "#FFFFFF" }}
       >
         {/* ── Logo ── */}
@@ -162,8 +162,8 @@ export default function AppSideBar() {
         <div className="h-px mx-4 opacity-20" style={{ backgroundColor: "#FFFFFF" }} />
 
         {/* ── Navigation ── */}
-        <SidebarGroup className="flex-1 px-0 mt-2">
-          <SidebarGroupContent>
+        <SidebarGroup className="flex-1 px-0 mt-2 min-h-0 overflow-hidden">
+          <SidebarGroupContent className="h-full overflow-auto">
             <SidebarMenu className="gap-0">
               {menuItems.map((item) => {
                 const active = isActive(item.path);

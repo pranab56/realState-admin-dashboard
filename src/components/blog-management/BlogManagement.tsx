@@ -125,7 +125,7 @@ export default function BlogManagement() {
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
         {blogs.length === 0 ? (
           <div className="col-span-full">
-            <Card className="border-none shadow-sm bg-white p-0 text-center">
+            <Card className="border-none shadow-sm bg-white p-0 text-center p-6">
               <div className="flex flex-col items-center gap-3">
                 <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: "#FEF0E4" }}>
                   <Plus className="w-7 h-7" style={{ color: "#F1913D" }} />

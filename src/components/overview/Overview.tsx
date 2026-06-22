@@ -3,7 +3,7 @@
 import BarChart from "@/components/overview/BarChart";
 import CardStates from "@/components/overview/CardStates";
 import LineChart from "@/components/overview/LineChart";
-import RecentActivity from "@/components/overview/RecentActivity";
+import LiveActivity from "@/components/overview/LiveActivity";
 import { useGetOverviewQuery } from "@/features/overview/overview";
 import { CustomLoading } from '../../hooks/CustomLoading';
 
@@ -33,7 +33,7 @@ export default function Overview() {
       {/* Row 3 — User Distribution + System Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <BarChart userDistribution={data?.userDistribution} totalUsers={data?.totalUsers} />
-        <RecentActivity />
+        <LiveActivity overviewData={data} />
       </div>
 
     </div>

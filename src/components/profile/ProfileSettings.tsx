@@ -282,16 +282,16 @@ export default function ProfileSettings() {
           <motion.div
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-xl shadow-sm p-8 space-y-8"
+            className="bg-white w-full rounded-xl shadow-sm p-8 space-y-8"
           >
-            <div>
+            <div className=''>
               <h2 className="text-xl font-bold" style={{ color: "#2C2E33" }}>Change Password</h2>
               <p className="text-sm font-medium" style={{ color: "#6C757D" }}>
                 Update your account password to keep your account secure.
               </p>
             </div>
 
-            <form onSubmit={handlePasswordChange} className="space-y-5 max-w-md">
+            <form onSubmit={handlePasswordChange} className="space-y-5 w-full">
               <div className="space-y-1.5">
                 <Label className="text-sm font-semibold" style={{ color: "#2C2E33" }}>Current Password</Label>
                 <div className="relative">
@@ -300,6 +300,7 @@ export default function ProfileSettings() {
                     className={inputCls}
                     style={inputStyle}
                     value={passwordData.currentPassword}
+                    placeholder="Enter your current password"
                     onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
                     required
                   />
@@ -321,6 +322,7 @@ export default function ProfileSettings() {
                     className={inputCls}
                     style={inputStyle}
                     value={passwordData.newPassword}
+                    placeholder="Enter your new password"
                     onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
                     required
                   />
@@ -347,6 +349,7 @@ export default function ProfileSettings() {
                       ...inputStyle,
                       borderColor: passwordData.confirmPassword && passwordData.newPassword !== passwordData.confirmPassword ? "#EF4444" : "#F2F2F2"
                     }}
+                    placeholder="Confirm your new password"
                     value={passwordData.confirmPassword}
                     onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
                     required

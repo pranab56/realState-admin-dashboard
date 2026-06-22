@@ -2,10 +2,9 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
+// Publish date handled automatically; UI removed
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -14,9 +13,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { CalendarIcon, CloudUpload, Loader2, Plus, X } from "lucide-react";
+import { CloudUpload, Loader2, Plus, X } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 
@@ -78,9 +76,7 @@ export default function CreateBlogForm({
     },
   });
 
-  const [date, setDate] = useState<Date | undefined>(
-    initialData?.publishDate ? new Date(initialData.publishDate) : new Date()
-  );
+  // publish date will be set automatically to today's date on submit
   const [tags, setTags] = useState<string[]>(initialData?.tags || []);
   const [tagInput, setTagInput] = useState("");
 
@@ -130,10 +126,7 @@ export default function CreateBlogForm({
     payload.append("content", formData.content);
     payload.append("category", formData.category);
     payload.append("status", formData.status);
-    payload.append(
-      "publishDate",
-      date ? format(date, "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd")
-    );
+    payload.append("publishDate", format(new Date(), "yyyy-MM-dd"));
 
     tags.forEach((tag, index) => payload.append(`tags[${index}]`, tag));
 
@@ -367,27 +360,7 @@ export default function CreateBlogForm({
               />
             </div>
 
-            <div className="space-y-1.5">
-              <Label className="text-sm font-semibold">Publish Date</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full h-11 justify-start text-left font-normal rounded-sm border",
-                      !date && "text-muted-foreground"
-                    )}
-                    style={inputStyle}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {date ? format(date, "PPP") : <span>Pick a date</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar mode="single" selected={date} onSelect={setDate} initialFocus />
-                </PopoverContent>
-              </Popover>
-            </div>
+            {/* Publish date removed from UI — set automatically on submit */}
 
             <div className="space-y-1.5">
               <Label className="text-sm font-semibold">Meta Title</Label>
