@@ -1,8 +1,20 @@
 "use client"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { usePathname } from "next/navigation";
+import { NEW_DATA_ENTITIES } from "@/config/newDataEntities";
+import { clearUnseenCount } from "@/features/notifications/newDataSlice";
+import { Bell } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { useDispatch, useSelector } from "react-redux";
 
 const PAGE_META: Record<string, { title: string; sub: string }> = {
   "/": { title: "Overview", sub: "Welcome back, see what's happening today." },
@@ -20,7 +32,18 @@ const USER_AVATAR = "https://images.unsplash.com/photo-1531427186611-ecfd6d936c7
 
 export default function MyNavber() {
   const pathname = usePathname();
+  const router = useRouter();
+  const dispatch = useDispatch();
   const meta = PAGE_META[pathname] || { title: "Admin Panel", sub: "Welcome to your admin dashboard." };
+
+  const unseen = useSelector((state: { newData: { unseen: Record<string, number> } }) => state.newData.unseen);
+  const newEntities = NEW_DATA_ENTITIES.filter((e) => (unseen[e.key] || 0) > 0);
+  const totalUnseen = newEntities.reduce((sum, e) => sum + (unseen[e.key] || 0), 0);
+
+  const handleSelectEntity = (key: string, route: string) => {
+    dispatch(clearUnseenCount(key));
+    router.push(route);
+  };
 
   return (
     <header className="flex h-20 items-center justify-between gap-4 bg-white px-6 w-full shrink-0 border-b" style={{ borderColor: "#F2F2F2" }}>
@@ -42,7 +65,55 @@ export default function MyNavber() {
       </div>
 
       <div className="flex items-center gap-6 shrink-0">
-        <div className="flex items-center gap-3 cursor-pointer group">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              className="relative w-11 h-11 rounded-xl flex items-center justify-center shrink-0 cursor-pointer transition-colors hover:opacity-90"
+              style={{ backgroundColor: "#FEF0E4" }}
+              title="New data notifications"
+            >
+              <Bell className="w-5 h-5" style={{ color: "#F1913D" }} />
+              {totalUnseen > 0 && (
+                <span
+                  className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
+                  style={{ backgroundColor: "#DC3545" }}
+                >
+                  {totalUnseen > 99 ? "99+" : totalUnseen}
+                </span>
+              )}
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-72">
+            <DropdownMenuLabel>New Data</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {newEntities.length === 0 ? (
+              <div className="px-3 py-6 text-center text-sm" style={{ color: "#6C757D" }}>
+                You&apos;re all caught up!
+              </div>
+            ) : (
+              newEntities.map((entity) => (
+                <DropdownMenuItem
+                  key={entity.key}
+                  onClick={() => handleSelectEntity(entity.key, entity.route)}
+                  className="flex items-center justify-between cursor-pointer"
+                >
+                  <span className="text-sm font-medium" style={{ color: "#2C2E33" }}>{entity.label}</span>
+                  <span
+                    className="text-xs font-bold px-2 py-0.5 rounded-full text-white"
+                    style={{ backgroundColor: "#F1913D" }}
+                  >
+                    {unseen[entity.key]}
+                  </span>
+                </DropdownMenuItem>
+              ))
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <button
+          onClick={() => router.push("/profile")}
+          className="flex items-center gap-3 cursor-pointer group"
+        >
           <div className="text-right hidden sm:block">
             <p className="text-sm font-bold leading-none mb-1 group-hover:text-[#F1913D] transition-colors" style={{ color: "#2C2E33" }}>
               Rasel Parvez
@@ -55,7 +126,7 @@ export default function MyNavber() {
             <AvatarImage src={USER_AVATAR} alt="Rasel Parvez" className="object-cover" />
             <AvatarFallback className="rounded-xl bg-[#F1913D] text-white">RP</AvatarFallback>
           </Avatar>
-        </div>
+        </button>
       </div>
     </header>
   )

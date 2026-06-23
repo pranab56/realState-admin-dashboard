@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 // import { Geist, Geist_Mono } from "next/font/google";
 import OptimusSidebar from "@/components/appSidebar/AppsideBar";
 import Header from "@/components/header/Header";
+import GlobalNewDataWatcher from "@/components/notifications/GlobalNewDataWatcher";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import "../globals.css";
@@ -22,6 +23,7 @@ export default function RootLayout({
 }>) {
   return (
     <ProtectedRoute>
+      <GlobalNewDataWatcher />
       <SidebarProvider>
         <OptimusSidebar />
         <SidebarInset className="bg-gray-100 flex flex-col overflow-hidden h-screen">

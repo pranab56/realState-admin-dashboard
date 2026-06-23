@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Building2,
+  Calendar,
   Car,
   CircleDollarSign,
   FileText,
@@ -30,6 +31,7 @@ import {
   LucideIcon,
   Scale,
   ScrollText,
+  Settings,
   Star,
   User,
   Users
@@ -58,6 +60,9 @@ const menuItems: MenuItem[] = [
     ],
   },
   {
+    name: "Reservation Management", path: "/reservation-management", icon: Calendar
+  },
+  {
     name: "Customers Management", path: "/user-management", icon: Users
   },
   {
@@ -81,6 +86,9 @@ const menuItems: MenuItem[] = [
   {
     name: "Blog Management", path: "/blog-management", icon: FileText
   },
+  {
+    name: "Newsletter Management", path: "/newsletter-management", icon: FileText
+  },
   { name: "Profile", path: "/profile", icon: User },
   {
     name: "Disclaimer", path: "/disclaimer", icon: ScrollText,
@@ -89,6 +97,9 @@ const menuItems: MenuItem[] = [
       { name: "Terms & Condition", path: "/disclaimer/terms-and-condition" },
     ],
   },
+  {
+    name: "Settings", path: "/settings", icon: Settings
+  }
 ];
 
 export default function AppSideBar() {

@@ -12,6 +12,9 @@ import {
 } from "@/components/ui/table";
 import { useGetPoaQuery } from "@/features/poa/poaApi";
 import { CustomLoading } from "@/hooks/CustomLoading";
+import { useMarkPageSeen } from "@/hooks/useMarkPageSeen";
+import { useNewItemsTracker } from "@/hooks/useNewItemsTracker";
+import NewPulseDot from "@/components/notifications/NewPulseDot";
 import { format } from "date-fns";
 import {
   CalendarClock,
@@ -82,7 +85,12 @@ export default function PoaManagement() {
   const [page, setPage]         = useState(1);
   const [selected, setSelected] = useState<Consultation | null>(null);
 
-  const { data: poaData, isLoading, isError } = useGetPoaQuery({ page });
+  const { data: poaData, isLoading, isError } = useGetPoaQuery({ page }, { pollingInterval: 3000 });
+  useMarkPageSeen("poa", poaData?.pagination?.total);
+  const { isNew, dismiss } = useNewItemsTracker(
+    "poa",
+    (poaData?.data || []).map((c: Consultation) => c._id)
+  );
 
   const consultations: Consultation[] = poaData?.data       || [];
   const pagination    = poaData?.pagination || { total: 0, limit: 10, page: 1, totalPage: 1 };
@@ -136,11 +144,16 @@ export default function PoaManagement() {
                   >
                     {/* Customer */}
                     <TableCell className="pl-6">
-                      <p className="text-sm font-semibold" style={{ color: "#2C2E33" }}>
-                        {item.customer?.name}
-                      </p>
-                      <p className="text-xs" style={{ color: "#6C757D" }}>{item.customer?.email}</p>
-                      <p className="text-xs" style={{ color: "#6C757D" }}>{item.customer?.phone}</p>
+                      <div className="flex items-center gap-2">
+                        {isNew(item._id) && <NewPulseDot />}
+                        <div>
+                          <p className="text-sm font-semibold" style={{ color: "#2C2E33" }}>
+                            {item.customer?.name}
+                          </p>
+                          <p className="text-xs" style={{ color: "#6C757D" }}>{item.customer?.email}</p>
+                          <p className="text-xs" style={{ color: "#6C757D" }}>{item.customer?.phone}</p>
+                        </div>
+                      </div>
                     </TableCell>
 
                     {/* Type */}
@@ -173,7 +186,7 @@ export default function PoaManagement() {
                     {/* Action */}
                     <TableCell className="text-center">
                       <button
-                        onClick={() => setSelected(item)}
+                        onClick={() => { setSelected(item); dismiss(item._id); }}
                         className="p-2 hover:bg-orange-50 rounded-lg transition-colors cursor-pointer"
                         style={{ color: "#F1913D" }}
                         title="View Details"

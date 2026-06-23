@@ -12,6 +12,9 @@ import {
 } from "@/components/ui/table";
 import { useGetInquiriesQuery } from "@/features/inquiries/inquiriesApi";
 import { CustomLoading } from "@/hooks/CustomLoading";
+import { useMarkPageSeen } from "@/hooks/useMarkPageSeen";
+import { useNewItemsTracker } from "@/hooks/useNewItemsTracker";
+import NewPulseDot from "@/components/notifications/NewPulseDot";
 import { format } from "date-fns";
 import { BadgeCheck, ChevronLeft, ChevronRight, Eye, MapPin, MessageSquare, XCircle } from "lucide-react";
 import Image from "next/image";
@@ -77,7 +80,12 @@ export default function InquiriesManagement() {
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<Inquiry | null>(null);
 
-  const { data: inquiriesData, isLoading, isError } = useGetInquiriesQuery({ page });
+  const { data: inquiriesData, isLoading, isError } = useGetInquiriesQuery({ page }, { pollingInterval: 3000 });
+  useMarkPageSeen("inquiries", inquiriesData?.pagination?.total);
+  const { isNew, dismiss } = useNewItemsTracker(
+    "inquiries",
+    (inquiriesData?.data || []).map((i: Inquiry) => i._id)
+  );
 
   const inquiries: Inquiry[] = inquiriesData?.data || [];
   const pagination = inquiriesData?.pagination || { total: 0, limit: 10, page: 1, totalPage: 1 };
@@ -131,11 +139,16 @@ export default function InquiriesManagement() {
                   >
                     {/* Customer */}
                     <TableCell className="pl-6">
-                      <p className="text-sm font-semibold" style={{ color: "#2C2E33" }}>
-                        {inq.customer?.name}
-                      </p>
-                      <p className="text-xs" style={{ color: "#6C757D" }}>{inq.customer?.email}</p>
-                      <p className="text-xs" style={{ color: "#6C757D" }}>{inq.customer?.phone}</p>
+                      <div className="flex items-center gap-2">
+                        {isNew(inq._id) && <NewPulseDot />}
+                        <div>
+                          <p className="text-sm font-semibold" style={{ color: "#2C2E33" }}>
+                            {inq.customer?.name}
+                          </p>
+                          <p className="text-xs" style={{ color: "#6C757D" }}>{inq.customer?.email}</p>
+                          <p className="text-xs" style={{ color: "#6C757D" }}>{inq.customer?.phone}</p>
+                        </div>
+                      </div>
                     </TableCell>
 
                     {/* Property */}
@@ -191,7 +204,7 @@ export default function InquiriesManagement() {
                     {/* Action */}
                     <TableCell className="text-center">
                       <button
-                        onClick={() => setSelected(inq)}
+                        onClick={() => { setSelected(inq); dismiss(inq._id); }}
                         className="p-2 hover:bg-orange-50 rounded-lg transition-colors cursor-pointer"
                         style={{ color: "#F1913D" }}
                         title="View Details"

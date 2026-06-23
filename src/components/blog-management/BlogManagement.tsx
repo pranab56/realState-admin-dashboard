@@ -21,7 +21,10 @@ import {
 import { format } from "date-fns";
 import toast from 'react-hot-toast';
 import { CustomLoading } from '../../hooks/CustomLoading';
+import { useMarkPageSeen } from '../../hooks/useMarkPageSeen';
+import { useNewItemsTracker } from '../../hooks/useNewItemsTracker';
 import { baseURL } from '../../utils/BaseURL';
+import NewPulseDot from '../notifications/NewPulseDot';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
 import CreateBlogForm from './CreateBlogForm';
 
@@ -53,7 +56,12 @@ export default function BlogManagement() {
   const [selectedBlog, setSelectedBlog] = useState<Blog | null>(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
-  const { data: blogData, isLoading, isError } = useGetBlogsQuery({ page });
+  const { data: blogData, isLoading, isError } = useGetBlogsQuery({ page }, { pollingInterval: 3000 });
+  useMarkPageSeen("blog", blogData?.pagination?.total);
+  const { isNew, dismiss } = useNewItemsTracker(
+    "blog",
+    (blogData?.data || []).map((b: Blog) => b._id)
+  );
   const [deleteBlog, { isLoading: isDeleting }] = useDeleteBlogMutation();
 
   const blogs: Blog[] = blogData?.data || [];
@@ -63,6 +71,7 @@ export default function BlogManagement() {
     setSelectedBlog(blog);
     setActiveImageIndex(0);
     setIsDetailsOpen(true);
+    dismiss(blog._id);
   };
 
   const handleEdit = (blog: Blog) => {
@@ -161,7 +170,8 @@ export default function BlogManagement() {
                     </div>
                   )}
                   {/* Status Badge on Image */}
-                  <div className="absolute top-3 left-3">
+                  <div className="absolute top-3 left-3 flex items-center gap-2">
+                    {isNew(b._id) && <NewPulseDot />}
                     <span
                       className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold capitalize backdrop-blur-md"
                       style={{

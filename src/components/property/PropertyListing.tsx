@@ -24,6 +24,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useGetManageListingQuery } from "@/features/manageProperty/managePropertyApi";
+import { useMarkPageSeen } from "@/hooks/useMarkPageSeen";
+import { useNewItemsTracker } from "@/hooks/useNewItemsTracker";
+import NewPulseDot from "@/components/notifications/NewPulseDot";
 import { baseURL } from "@/utils/BaseURL";
 import {
   BadgeCheck,
@@ -120,6 +123,7 @@ interface Property {
   location?: { coordinates?: [number, number] };
   amenities?: string[];
   uid?: string;
+  createdAt?: string;
 }
 
 /* ─────────────────────────── Detail Modal ─────────────────────── */
@@ -368,7 +372,12 @@ export default function PropertyListing() {
   if (isVerified !== "") params.isVerified = isVerified;
   if (listingPurpose) params.listingPurpose = listingPurpose;
 
-  const { data: propertyListingData, isLoading, isError } = useGetManageListingQuery(params);
+  const { data: propertyListingData, isLoading, isError } = useGetManageListingQuery(params, { pollingInterval: 3000 });
+  useMarkPageSeen("propertyListing", propertyListingData?.pagination?.total);
+  const { isNew, dismiss } = useNewItemsTracker(
+    "propertyListing",
+    (propertyListingData?.data || []).map((p: Property) => p._id)
+  );
 
   const properties = propertyListingData?.data || [];
   const pagination = propertyListingData?.pagination || { total: 0, limit: 10, page: 1, totalPage: 1 };
@@ -504,6 +513,7 @@ export default function PropertyListing() {
                     {/* Property Details */}
                     <TableCell className="pl-6">
                       <div className="flex items-center gap-3">
+                        {isNew(prop._id) && <NewPulseDot />}
                         <div className="relative w-14 h-10 rounded-lg overflow-hidden shrink-0 bg-gray-100">
                           {prop.images?.[0] ? (
                             <Image src={imgUrl(prop.images[0])} alt={prop.title} fill className="object-cover"
@@ -569,7 +579,7 @@ export default function PropertyListing() {
                     <TableCell className="text-center">
                       <button
                         type="button"
-                        onClick={() => setSelectedProp(prop)}
+                        onClick={() => { setSelectedProp(prop); dismiss(prop._id); }}
                         className="inline-flex items-center justify-center w-8 h-8 rounded-lg border transition-colors hover:bg-orange-50 cursor-pointer"
                         style={{ borderColor: "#F2F2F2" }}
                         title="View Details"

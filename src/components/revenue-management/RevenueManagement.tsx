@@ -10,6 +10,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useGetRevenueQuery } from "@/features/revenue/revenueApi";
+import { useMarkPageSeen } from "@/hooks/useMarkPageSeen";
+import { useNewItemsTracker } from "@/hooks/useNewItemsTracker";
+import NewPulseDot from "@/components/notifications/NewPulseDot";
 
 import { format } from "date-fns";
 import { motion } from "framer-motion";
@@ -100,7 +103,12 @@ export default function RevenueManagement() {
   const [selectedTxn, setSelectedTxn] = useState<Transaction | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const { data: revenueData, isLoading, isError } = useGetRevenueQuery({ page });
+  const { data: revenueData, isLoading, isError } = useGetRevenueQuery({ page }, { pollingInterval: 3000 });
+  useMarkPageSeen("revenue", revenueData?.pagination?.total);
+  const { isNew, dismiss } = useNewItemsTracker(
+    "revenue",
+    (revenueData?.data || []).map((t: Transaction) => t._id)
+  );
 
   const transactions = revenueData?.data || [];
   const pagination = revenueData?.pagination || { total: 0, limit: 10, page: 1, totalPage: 1 };
@@ -225,13 +233,16 @@ export default function RevenueManagement() {
                       className="hover:bg-gray-50/60 transition-colors"
                     >
                       <TableCell className="pl-6">
-                        <div className="flex flex-col">
-                          <span className="text-sm font-semibold" style={{ color: "#2C2E33" }}>
-                            {t.user?.firstName} {t.user?.lastName}
-                          </span>
-                          <span className="text-xs text-gray-400">
-                            {t.createdAt ? format(new Date(t.createdAt), "MMM dd, yyyy") : "N/A"}
-                          </span>
+                        <div className="flex items-center gap-2">
+                          {isNew(t._id) && <NewPulseDot />}
+                          <div className="flex flex-col">
+                            <span className="text-sm font-semibold" style={{ color: "#2C2E33" }}>
+                              {t.user?.firstName} {t.user?.lastName}
+                            </span>
+                            <span className="text-xs text-gray-400">
+                              {t.createdAt ? format(new Date(t.createdAt), "MMM dd, yyyy") : "N/A"}
+                            </span>
+                          </div>
                         </div>
                       </TableCell>
 
@@ -266,7 +277,7 @@ export default function RevenueManagement() {
 
                       <TableCell className="text-center">
                         <button
-                          onClick={() => handleViewDetails(t)}
+                          onClick={() => { handleViewDetails(t); dismiss(t._id); }}
                           className="p-2 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer text-[#F1913D]"
                           title="View Details"
                         >

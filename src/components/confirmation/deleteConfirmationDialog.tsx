@@ -1,14 +1,13 @@
-import React from "react";
+import { Trash2 } from "lucide-react";
+import { Button } from "../ui/button";
 import {
   Dialog,
-  DialogTitle,
-  DialogHeader,
   DialogContent,
   DialogDescription,
   DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "../ui/dialog";
-import { Button } from "../ui/button";
-import { Trash2 } from "lucide-react";
 
 interface DeleteConfirmationDialogProps {
   isOpen: boolean;
@@ -40,13 +39,12 @@ function DeleteConfirmationDialog({
   // Generate description if not provided
   const defaultDescription =
     description ||
-    `Are you sure you want to delete ${
-      itemName ? `"${itemName}"` : `this ${itemType}`
+    `Are you sure you want to delete ${itemName ? `"${itemName}"` : `this ${itemType}`
     }? This action cannot be undone.`;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="overflow-y-auto">
+      <DialogContent className="overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <div className="flex items-center space-x-2">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100">

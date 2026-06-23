@@ -12,6 +12,9 @@ import {
 } from "@/components/ui/table";
 import { useGetReviewsQuery } from "@/features/review/reviewApi";
 import { CustomLoading } from "@/hooks/CustomLoading";
+import { useMarkPageSeen } from "@/hooks/useMarkPageSeen";
+import { useNewItemsTracker } from "@/hooks/useNewItemsTracker";
+import NewPulseDot from "@/components/notifications/NewPulseDot";
 import { baseURL } from "@/utils/BaseURL";
 import { format } from "date-fns";
 import { BadgeCheck, ChevronLeft, ChevronRight, Eye, MapPin, Star, XCircle } from "lucide-react";
@@ -112,7 +115,12 @@ export default function ReviewManagement() {
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<Review | null>(null);
 
-  const { data: reviewData, isLoading, isError } = useGetReviewsQuery({ page });
+  const { data: reviewData, isLoading, isError } = useGetReviewsQuery({ page }, { pollingInterval: 3000 });
+  useMarkPageSeen("review", reviewData?.pagination?.total);
+  const { isNew, dismiss } = useNewItemsTracker(
+    "review",
+    (reviewData?.data || []).map((r: Review) => r._id)
+  );
 
   const reviews = reviewData?.data || [];
   const pagination = reviewData?.pagination || { total: 0, limit: 10, page: 1, totalPage: 1 };
@@ -185,6 +193,7 @@ export default function ReviewManagement() {
                       {/* Customer */}
                       <TableCell className="pl-6">
                         <div className="flex items-center gap-2.5">
+                          {isNew(rev._id) && <NewPulseDot />}
                           <Avatar src={rev.customer?.image} name={fullName || "?"} />
                           <div>
                             <p className="text-sm font-semibold" style={{ color: "#2C2E33" }}>{fullName || "—"}</p>
@@ -245,7 +254,7 @@ export default function ReviewManagement() {
                       {/* Action */}
                       <TableCell className="text-center">
                         <button
-                          onClick={() => setSelected(rev)}
+                          onClick={() => { setSelected(rev); dismiss(rev._id); }}
                           className="p-2 hover:bg-orange-50 rounded-lg transition-colors cursor-pointer"
                           style={{ color: "#F1913D" }}
                           title="View Details"

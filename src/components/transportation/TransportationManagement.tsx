@@ -12,6 +12,9 @@ import {
 } from "@/components/ui/table";
 import { useGetTransportationQuery } from "@/features/transportation/transportationApi";
 import { CustomLoading } from "@/hooks/CustomLoading";
+import { useMarkPageSeen } from "@/hooks/useMarkPageSeen";
+import { useNewItemsTracker } from "@/hooks/useNewItemsTracker";
+import NewPulseDot from "@/components/notifications/NewPulseDot";
 import { format } from "date-fns";
 import {
   ArrowRight,
@@ -91,7 +94,12 @@ export default function TransportationManagement() {
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<Ride | null>(null);
 
-  const { data: rideData, isLoading, isError } = useGetTransportationQuery({ page });
+  const { data: rideData, isLoading, isError } = useGetTransportationQuery({ page }, { pollingInterval: 3000 });
+  useMarkPageSeen("transportation", rideData?.pagination?.total);
+  const { isNew, dismiss } = useNewItemsTracker(
+    "transportation",
+    (rideData?.data || []).map((r: Ride) => r._id)
+  );
 
   const rides = rideData?.data || [];
   const pagination = rideData?.pagination || { total: 0, limit: 10, page: 1, totalPage: 1 };
@@ -142,9 +150,14 @@ export default function TransportationManagement() {
 
                     {/* Customer */}
                     <TableCell className="pl-6">
-                      <p className="text-sm font-semibold" style={{ color: "#2C2E33" }}>{ride.customer?.name}</p>
-                      <p className="text-xs" style={{ color: "#6C757D" }}>{ride.customer?.email}</p>
-                      <p className="text-xs" style={{ color: "#6C757D" }}>{ride.customer?.phone}</p>
+                      <div className="flex items-center gap-2">
+                        {isNew(ride._id) && <NewPulseDot />}
+                        <div>
+                          <p className="text-sm font-semibold" style={{ color: "#2C2E33" }}>{ride.customer?.name}</p>
+                          <p className="text-xs" style={{ color: "#6C757D" }}>{ride.customer?.email}</p>
+                          <p className="text-xs" style={{ color: "#6C757D" }}>{ride.customer?.phone}</p>
+                        </div>
+                      </div>
                     </TableCell>
 
                     {/* Route */}
@@ -197,7 +210,7 @@ export default function TransportationManagement() {
                     {/* Action */}
                     <TableCell className="text-center">
                       <button
-                        onClick={() => setSelected(ride)}
+                        onClick={() => { setSelected(ride); dismiss(ride._id); }}
                         className="p-2 hover:bg-orange-50 rounded-lg transition-colors cursor-pointer"
                         style={{ color: "#F1913D" }}
                         title="View Details"

@@ -28,7 +28,10 @@ import {
 import Image from "next/image";
 import { useState } from "react";
 import { CustomLoading } from "../../hooks/CustomLoading";
+import { useMarkPageSeen } from "../../hooks/useMarkPageSeen";
+import { useNewItemsTracker } from "../../hooks/useNewItemsTracker";
 import { baseURL } from "../../utils/BaseURL";
+import NewPulseDot from "../notifications/NewPulseDot";
 
 /* ── Types ─────────────────────────────────────────────────── */
 interface Partner {
@@ -78,7 +81,12 @@ export default function PartnerManagement() {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [selectedPartner, setSelectedPartner] = useState<Partner | null>(null);
 
-  const { data: partnerData, isLoading, isError } = useGetPartnerQuery({ page, limit: 10 });
+  const { data: partnerData, isLoading, isError } = useGetPartnerQuery({ page, limit: 10 }, { pollingInterval: 3000 });
+  useMarkPageSeen("partner", partnerData?.pagination?.total);
+  const { isNew, dismiss } = useNewItemsTracker(
+    "partner",
+    (partnerData?.data || []).map((p: Partner) => p._id)
+  );
 
   if (isLoading) return <CustomLoading />;
   if (isError) return <div className="p-10 text-center text-red-500">Failed to load partners</div>;
@@ -102,6 +110,7 @@ export default function PartnerManagement() {
   const handleViewDetails = (partner: Partner) => {
     setSelectedPartner(partner);
     setIsDetailsOpen(true);
+    dismiss(partner._id);
   };
 
   return (
@@ -178,6 +187,7 @@ export default function PartnerManagement() {
                   >
                     <TableCell className="pl-6">
                       <div className="flex items-center gap-3">
+                        {isNew(p._id) && <NewPulseDot />}
                         <div className="relative w-10 h-10 rounded-full overflow-hidden shrink-0 bg-gray-100">
                           {p.image ? (
                             <Image

@@ -21,6 +21,9 @@ import { BadgeCheck, ChevronLeft, ChevronRight, MapPin, XCircle } from "lucide-r
 import Image from "next/image";
 import { useState } from "react";
 import { CustomLoading } from "../../hooks/CustomLoading";
+import { useMarkPageSeen } from "../../hooks/useMarkPageSeen";
+import { useNewItemsTracker } from "../../hooks/useNewItemsTracker";
+import NewPulseDot from "../notifications/NewPulseDot";
 
 function StatusBadge({ status }: { status?: string }) {
   if (status === "active")
@@ -58,6 +61,7 @@ interface Hotel {
   currency?: string;
   status?: string;
   isVerified?: boolean;
+  createdAt?: string;
 }
 
 export default function ManageHotel() {
@@ -71,7 +75,12 @@ export default function ManageHotel() {
   if (status) params.status = status;
   if (isVerified !== "") params.isVerified = isVerified;
 
-  const { data: hotelData, isLoading, isError } = useGetManageHotelsQuery(params);
+  const { data: hotelData, isLoading, isError } = useGetManageHotelsQuery(params, { pollingInterval: 3000 });
+  useMarkPageSeen("propertyHotel", hotelData?.pagination?.total);
+  const { isNew, dismiss } = useNewItemsTracker(
+    "propertyHotel",
+    (hotelData?.data || []).map((h: Hotel) => h._id)
+  );
 
   const hotels = hotelData?.data || [];
   const pagination = hotelData?.pagination || { total: 0, limit: 10, page: 1, totalPage: 1 };
@@ -172,9 +181,10 @@ export default function ManageHotel() {
                 </TableRow>
               ) : (
                 hotels.map((hotel: Hotel) => (
-                  <TableRow key={hotel._id} style={{ borderColor: "#F2F2F2" }} className="hover:bg-gray-50/60 transition-colors">
+                  <TableRow key={hotel._id} style={{ borderColor: "#F2F2F2" }} className="hover:bg-gray-50/60 transition-colors cursor-pointer" onClick={() => dismiss(hotel._id)}>
                     <TableCell className="pl-6">
                       <div className="flex items-center gap-3">
+                        {isNew(hotel._id) && <NewPulseDot />}
                         <div className="relative w-14 h-10 rounded-lg overflow-hidden shrink-0 bg-gray-100">
                           {hotel.images?.[0] ? (
                             <Image src={hotel.images[0]} alt={hotel.title} fill className="object-cover" />

@@ -21,7 +21,10 @@ import {
 import Image from "next/image";
 import { useState } from "react";
 import { CustomLoading } from "../../hooks/CustomLoading";
+import { useMarkPageSeen } from "../../hooks/useMarkPageSeen";
+import { useNewItemsTracker } from "../../hooks/useNewItemsTracker";
 import { baseURL } from '../../utils/BaseURL';
+import NewPulseDot from "../notifications/NewPulseDot";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 
 /* ── Types ─────────────────────────────────────────────────── */
@@ -75,7 +78,12 @@ export default function UserManagement() {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
-  const { data: customerData, isLoading, isError } = useGetCustomarQuery({ page, limit: 10 });
+  const { data: customerData, isLoading, isError } = useGetCustomarQuery({ page, limit: 10 }, { pollingInterval: 3000 });
+  useMarkPageSeen("customer", customerData?.pagination?.total);
+  const { isNew, dismiss } = useNewItemsTracker(
+    "customer",
+    (customerData?.data || []).map((u: User) => u._id)
+  );
 
   if (isLoading) return <CustomLoading />;
   if (isError) return <div className="p-10 text-center text-red-500">Failed to load customers</div>;
@@ -99,6 +107,7 @@ export default function UserManagement() {
   const handleViewDetails = (user: User) => {
     setSelectedUser(user);
     setIsDetailsOpen(true);
+    dismiss(user._id);
   };
 
   return (
@@ -176,6 +185,7 @@ export default function UserManagement() {
                     {/* Customer Info */}
                     <TableCell className="pl-6">
                       <div className="flex items-center gap-3">
+                        {isNew(c._id) && <NewPulseDot />}
                         <div className="relative w-10 h-10 rounded-full overflow-hidden shrink-0 bg-gray-100">
                           {c.image ? (
                             <Image
