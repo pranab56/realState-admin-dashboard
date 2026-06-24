@@ -17,4 +17,5 @@ export const NEW_DATA_ENTITIES: NewDataEntity[] = [
   { key: "revenue", label: "Transactions", route: "/revenue-management" },
   { key: "propertyListing", label: "Property Listings", route: "/property-management/listing" },
   { key: "propertyHotel", label: "Hotels", route: "/property-management/hotel" },
+  { key: "advertisement", label: "Advertisements", route: "/advertisement-management" },
 ];

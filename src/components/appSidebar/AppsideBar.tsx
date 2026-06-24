@@ -40,14 +40,18 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import NewPulseDot from "../notifications/NewPulseDot";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
+
+type MenuChild = { name: string; path: string; key?: string };
 
 type MenuItem = {
   name: string;
   path: string;
   icon: LucideIcon;
-  children?: { name: string; path: string }[];
+  key?: string;
+  children?: MenuChild[];
 };
 
 const menuItems: MenuItem[] = [
@@ -55,42 +59,42 @@ const menuItems: MenuItem[] = [
   {
     name: "Property Management", path: "/property-management", icon: Building2,
     children: [
-      { name: "Manage Listing ", path: "/property-management/listing" },
-      { name: "Manage Hotels", path: "/property-management/hotel" },
+      { name: "Manage Listing ", path: "/property-management/listing", key: "propertyListing" },
+      { name: "Manage Hotels", path: "/property-management/hotel", key: "propertyHotel" },
     ],
   },
   {
-    name: "Reservation Management", path: "/reservation-management", icon: Calendar
+    name: "Reservation Management", path: "/reservation-management", icon: Calendar, key: "reservation"
   },
   {
-    name: "Customers Management", path: "/user-management", icon: Users
+    name: "Customers Management", path: "/user-management", icon: Users, key: "customer"
   },
   {
-    name: "Partner Management", path: "/partner-management", icon: Handshake
+    name: "Partner Management", path: "/partner-management", icon: Handshake, key: "partner"
   },
   {
-    name: "Transportation Management", path: "/transportation", icon: Car
+    name: "Transportation Management", path: "/transportation", icon: Car, key: "transportation"
   },
   {
-    name: "POA Management", path: "/poa", icon: Scale
+    name: "POA Management", path: "/poa", icon: Scale, key: "poa"
   },
   {
-    name: "Revenue Management", path: "/revenue-management", icon: CircleDollarSign
+    name: "Revenue Management", path: "/revenue-management", icon: CircleDollarSign, key: "revenue"
   },
   {
-    name: "Inquiries Management", path: "/inquiries", icon: Inbox
+    name: "Inquiries Management", path: "/inquiries", icon: Inbox, key: "inquiries"
   },
   {
-    name: "Review Management", path: "/review", icon: Star
+    name: "Review Management", path: "/review", icon: Star, key: "review"
   },
   {
-    name: "Blog Management", path: "/blog-management", icon: FileText
+    name: "Blog Management", path: "/blog-management", icon: FileText, key: "blog"
   },
   {
-    name: "Newsletter Management", path: "/newsletter-management", icon: FileText
+    name: "Newsletter Management", path: "/newsletter-management", icon: FileText, key: "newsletter"
   },
   {
-    name: "Advertisement Management", path: "/advertisement-management", icon: FileText
+    name: "Advertisement Management", path: "/advertisement-management", icon: FileText, key: "advertisement"
   },
   { name: "Profile", path: "/profile", icon: User },
   {
@@ -111,6 +115,11 @@ export default function AppSideBar() {
   const dispatch = useDispatch();
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
+
+  // Global new-data state — populated in the background by GlobalNewDataWatcher
+  // regardless of which page is currently open, so other modules light up
+  // their sidebar entry the moment new data arrives.
+  const unseen = useSelector((s: { newData: { unseen: Record<string, number> } }) => s.newData.unseen);
 
   // Auto-expand sections whose child path is currently active
   const defaultOpen = menuItems
@@ -184,6 +193,11 @@ export default function AppSideBar() {
                 const hasChildren = !!item.children?.length;
                 const isSectionOpen = openItems.includes(item.name);
 
+                const ownUnseen = item.key ? unseen[item.key] || 0 : 0;
+                const childrenUnseen =
+                  item.children?.reduce((sum, c) => sum + (c.key ? unseen[c.key] || 0 : 0), 0) || 0;
+                const hasNew = ownUnseen > 0 || childrenUnseen > 0;
+
                 return (
                   <SidebarMenuItem key={item.name}>
                     <SidebarMenuButton
@@ -210,8 +224,16 @@ export default function AppSideBar() {
                             isCollapsed && "justify-center gap-0"
                           )}
                         >
-                          <item.icon className="w-5 h-5 shrink-0" strokeWidth={1.5} />
-                          {!isCollapsed && <span>{item.name}</span>}
+                          <span className="relative shrink-0">
+                            <item.icon className="w-5 h-5 shrink-0" strokeWidth={1.5} />
+                            {hasNew && isCollapsed && (
+                              <span className="absolute -top-1 -right-1">
+                                <NewPulseDot />
+                              </span>
+                            )}
+                          </span>
+                          {!isCollapsed && <span className="flex-1 truncate">{item.name}</span>}
+                          {!isCollapsed && hasNew && <NewPulseDot />}
                         </div>
                       ) : (
                         <Link
@@ -221,8 +243,16 @@ export default function AppSideBar() {
                             isCollapsed && "justify-center gap-0"
                           )}
                         >
-                          <item.icon className="w-5 h-5 shrink-0" strokeWidth={1.5} />
-                          {!isCollapsed && <span>{item.name}</span>}
+                          <span className="relative shrink-0">
+                            <item.icon className="w-5 h-5 shrink-0" strokeWidth={1.5} />
+                            {hasNew && isCollapsed && (
+                              <span className="absolute -top-1 -right-1">
+                                <NewPulseDot />
+                              </span>
+                            )}
+                          </span>
+                          {!isCollapsed && <span className="flex-1 truncate">{item.name}</span>}
+                          {!isCollapsed && hasNew && <NewPulseDot />}
                         </Link>
                       )}
                     </SidebarMenuButton>
@@ -242,6 +272,7 @@ export default function AppSideBar() {
                               const childActive =
                                 pathname === child.path ||
                                 pathname.startsWith(child.path + "/");
+                              const childHasNew = child.key ? (unseen[child.key] || 0) > 0 : false;
                               return (
                                 <SidebarMenuSubItem key={child.name}>
                                   <SidebarMenuSubButton
@@ -262,12 +293,13 @@ export default function AppSideBar() {
                                       />
                                       <span
                                         className={cn(
-                                          "text-sm",
+                                          "text-sm flex-1 truncate",
                                           childActive ? "font-medium" : "font-light"
                                         )}
                                       >
                                         {child.name}
                                       </span>
+                                      {childHasNew && <NewPulseDot />}
                                     </Link>
                                   </SidebarMenuSubButton>
                                 </SidebarMenuSubItem>

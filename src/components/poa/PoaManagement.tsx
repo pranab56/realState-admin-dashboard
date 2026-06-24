@@ -1,5 +1,6 @@
 "use client";
 
+import NewPulseDot from "@/components/notifications/NewPulseDot";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
@@ -14,7 +15,6 @@ import { useGetPoaQuery } from "@/features/poa/poaApi";
 import { CustomLoading } from "@/hooks/CustomLoading";
 import { useMarkPageSeen } from "@/hooks/useMarkPageSeen";
 import { useNewItemsTracker } from "@/hooks/useNewItemsTracker";
-import NewPulseDot from "@/components/notifications/NewPulseDot";
 import { format } from "date-fns";
 import {
   CalendarClock,
@@ -47,12 +47,13 @@ interface Consultation {
 function StatusBadge({ status }: { status: string }) {
   const s = status?.toLowerCase();
   const map: Record<string, { bg: string; color: string; label: string }> = {
-    pending:    { bg: "#FEF0E4", color: "#F1913D", label: "Pending"     },
-    in_review:  { bg: "#E3F2FD", color: "#1976D2", label: "In Review"   },
-    resolved:   { bg: "#E8F5E9", color: "#2B9724", label: "Resolved"    },
-    cancelled:  { bg: "#FEE2E2", color: "#DC3545", label: "Cancelled"   },
-    closed:     { bg: "#E8F5E9", color: "#2B9724", label: "Closed"      },
+    pending: { bg: "#FEF0E4", color: "#F1913D", label: "Pending" },
+    in_review: { bg: "#E3F2FD", color: "#1976D2", label: "In Review" },
+    resolved: { bg: "#E8F5E9", color: "#2B9724", label: "Resolved" },
+    cancelled: { bg: "#FEE2E2", color: "#DC3545", label: "Cancelled" },
+    closed: { bg: "#E8F5E9", color: "#2B9724", label: "Closed" },
   };
+
   const style = map[s] ?? { bg: "#F9FAFB", color: "#6C757D", label: status };
   return (
     <span
@@ -82,7 +83,7 @@ function TypeBadge({ type }: { type: string }) {
 
 /* ── Main component ───────────────────────────────────────────── */
 export default function PoaManagement() {
-  const [page, setPage]         = useState(1);
+  const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<Consultation | null>(null);
 
   const { data: poaData, isLoading, isError } = useGetPoaQuery({ page }, { pollingInterval: 3000 });
@@ -92,16 +93,16 @@ export default function PoaManagement() {
     (poaData?.data || []).map((c: Consultation) => c._id)
   );
 
-  const consultations: Consultation[] = poaData?.data       || [];
-  const pagination    = poaData?.pagination || { total: 0, limit: 10, page: 1, totalPage: 1 };
+  const consultations: Consultation[] = poaData?.data || [];
+  const pagination = poaData?.pagination || { total: 0, limit: 10, page: 1, totalPage: 1 };
 
   if (isLoading) return <CustomLoading />;
-  if (isError)   return <div className="p-10 text-center text-red-500">Failed to load consultations</div>;
+  if (isError) return <div className="p-10 text-center text-red-500">Failed to load consultations</div>;
 
-  const TOTAL    = pagination.total;
+  const TOTAL = pagination.total;
   const PER_PAGE = pagination.limit;
-  const LAST_PG  = pagination.totalPage;
-  const PAGES    = Array.from({ length: LAST_PG }, (_, i) => i + 1);
+  const LAST_PG = pagination.totalPage;
+  const PAGES = Array.from({ length: LAST_PG }, (_, i) => i + 1);
 
   return (
     <div className="space-y-6">
@@ -120,10 +121,10 @@ export default function PoaManagement() {
             <TableHeader>
               <TableRow style={{ borderColor: "#F2F2F2" }}>
                 <TableHead className="text-xs font-semibold pl-6" style={{ color: "#6C757D" }}>Customer</TableHead>
-                <TableHead className="text-xs font-semibold"      style={{ color: "#6C757D" }}>Type</TableHead>
-                <TableHead className="text-xs font-semibold"      style={{ color: "#6C757D" }}>Message</TableHead>
-                <TableHead className="text-xs font-semibold"      style={{ color: "#6C757D" }}>Date</TableHead>
-                <TableHead className="text-xs font-semibold"      style={{ color: "#6C757D" }}>Status</TableHead>
+                <TableHead className="text-xs font-semibold" style={{ color: "#6C757D" }}>Type</TableHead>
+                <TableHead className="text-xs font-semibold" style={{ color: "#6C757D" }}>Message</TableHead>
+                <TableHead className="text-xs font-semibold" style={{ color: "#6C757D" }}>Date</TableHead>
+                <TableHead className="text-xs font-semibold" style={{ color: "#6C757D" }}>Status</TableHead>
                 <TableHead className="text-xs font-semibold text-center" style={{ color: "#6C757D" }}>Action</TableHead>
               </TableRow>
             </TableHeader>
@@ -274,9 +275,9 @@ export default function PoaManagement() {
                 <p className="text-sm font-bold" style={{ color: "#2C2E33" }}>Customer Information</p>
                 <div className="grid grid-cols-2 gap-3">
                   {[
-                    { label: "Name",       value: selected.customer?.name },
-                    { label: "Email",      value: selected.customer?.email },
-                    { label: "Phone",      value: selected.customer?.phone },
+                    { label: "Name", value: selected.customer?.name },
+                    { label: "Email", value: selected.customer?.email },
+                    { label: "Phone", value: selected.customer?.phone },
                     {
                       label: "Submitted",
                       value: selected.createdAt

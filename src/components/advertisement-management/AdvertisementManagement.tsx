@@ -26,7 +26,10 @@ import Image from "next/image";
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { CustomLoading } from "../../hooks/CustomLoading";
+import { useMarkPageSeen } from "../../hooks/useMarkPageSeen";
+import { useNewItemsTracker } from "../../hooks/useNewItemsTracker";
 import { baseURL } from "../../utils/BaseURL";
+import NewPulseDot from "../notifications/NewPulseDot";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "../ui/alert-dialog";
 import CreateAdvertisementForm from "./CreateAdvertisementForm";
 
@@ -73,9 +76,16 @@ export default function AdvertisementManagement() {
   const ads: Advertisement[] = adData?.data || [];
   const pagination = adData?.pagination || { total: ads.length, limit: 10, page: 1, totalPage: 1 };
 
+  useMarkPageSeen("advertisement", adData?.pagination?.total ?? ads.length);
+  const { isNew, dismiss } = useNewItemsTracker(
+    "advertisement",
+    ads.map((a) => a._id)
+  );
+
   const handleEdit = (ad: Advertisement) => {
     setSelectedAd(ad);
     setIsEditOpen(true);
+    dismiss(ad._id);
   };
 
   const handleDeleteClick = (ad: Advertisement) => {
@@ -130,6 +140,7 @@ export default function AdvertisementManagement() {
       </div>
 
       {/* List */}
+      <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
       <Card className="border-none shadow-sm bg-white overflow-hidden p-0">
         <div className="px-6 pt-5 pb-3">
           <h2 className="text-base font-bold" style={{ color: "#2C2E33" }}>Advertisements List</h2>
@@ -164,7 +175,10 @@ export default function AdvertisementManagement() {
                         ) : null}
                       </div>
                       <div>
-                        <p className="text-sm font-semibold" style={{ color: "#2C2E33" }}>{ad.title}</p>
+                        <p className="text-sm font-semibold flex items-center gap-2" style={{ color: "#2C2E33" }}>
+                          {isNew(ad._id) && <NewPulseDot />}
+                          {ad.title}
+                        </p>
                         {ad.description && (
                           <p className="text-xs line-clamp-1 max-w-[220px]" style={{ color: "#6C757D" }}>{ad.description}</p>
                         )}
@@ -278,6 +292,7 @@ export default function AdvertisementManagement() {
           </div>
         )}
       </Card>
+      </motion.div>
 
       {/* ── Edit Modal ── */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>

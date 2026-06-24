@@ -1,5 +1,6 @@
 "use client";
 
+import { useGetAdvertisementsQuery } from "@/features/advertisement/advertisementApi";
 import { useGetBlogsQuery } from "@/features/blog/blogApi";
 import { useGetCustomarQuery } from "@/features/customar/customarApi";
 import { useGetInquiriesQuery } from "@/features/inquiries/inquiriesApi";
@@ -16,7 +17,7 @@ import { useGetReviewsQuery } from "@/features/review/reviewApi";
 import { useGetTransportationQuery } from "@/features/transportation/transportationApi";
 import { useNewDataWatcher } from "@/hooks/useNewDataWatcher";
 
-const POLL_MS = 60000;
+const POLL_MS = 10000;
 
 /**
  * Mounted once at the app shell. Polls every management list's total
@@ -36,6 +37,7 @@ export default function GlobalNewDataWatcher() {
   const { data: revenue } = useGetRevenueQuery({ page: 1 }, { pollingInterval: POLL_MS });
   const { data: propertyListing } = useGetManageListingQuery({ page: 1, limit: 10 }, { pollingInterval: POLL_MS });
   const { data: propertyHotel } = useGetManageHotelsQuery({ page: 1, limit: 10 }, { pollingInterval: POLL_MS });
+  const { data: advertisement } = useGetAdvertisementsQuery({ page: 1 }, { pollingInterval: POLL_MS });
 
   useNewDataWatcher("reservation", "reservation", reservation?.pagination?.total);
   useNewDataWatcher("inquiries", "inquiry", inquiries?.pagination?.total);
@@ -49,6 +51,7 @@ export default function GlobalNewDataWatcher() {
   useNewDataWatcher("revenue", "transaction", revenue?.pagination?.total);
   useNewDataWatcher("propertyListing", "property listing", propertyListing?.pagination?.total);
   useNewDataWatcher("propertyHotel", "hotel", propertyHotel?.pagination?.total);
+  useNewDataWatcher("advertisement", "advertisement", advertisement?.data?.length);
 
   return null;
 }
