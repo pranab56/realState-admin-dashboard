@@ -20,6 +20,11 @@ const nextConfig: NextConfig = {
         pathname: "/**",
       },
       {
+        protocol: 'https',
+        hostname: 'api.zilahomes.com',
+        pathname: "/**",
+      },
+      {
         protocol: "https",
         hostname: "humayon5002.binarybards.online",
         pathname: "/**",
