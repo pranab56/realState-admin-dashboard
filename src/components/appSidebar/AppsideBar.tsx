@@ -89,6 +89,9 @@ const menuItems: MenuItem[] = [
   {
     name: "Newsletter Management", path: "/newsletter-management", icon: FileText
   },
+  {
+    name: "Advertisement Management", path: "/advertisement-management", icon: FileText
+  },
   { name: "Profile", path: "/profile", icon: User },
   {
     name: "Disclaimer", path: "/disclaimer", icon: ScrollText,
