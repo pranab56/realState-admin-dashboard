@@ -24,6 +24,7 @@ import { CustomLoading } from '../../hooks/CustomLoading';
 import { useMarkPageSeen } from '../../hooks/useMarkPageSeen';
 import { useNewItemsTracker } from '../../hooks/useNewItemsTracker';
 import { baseURL } from '../../utils/BaseURL';
+import MarkAllSeenButton from '../notifications/MarkAllSeenButton';
 import NewPulseDot from '../notifications/NewPulseDot';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
 import CreateBlogForm from './CreateBlogForm';
@@ -58,11 +59,12 @@ export default function BlogManagement() {
 
   const { data: blogData, isLoading, isError } = useGetBlogsQuery({ page }, { pollingInterval: 3000 });
   useMarkPageSeen("blog", blogData?.pagination?.total);
-  const { isNew, dismiss } = useNewItemsTracker(
+  const { isNew, dismiss, dismissAll } = useNewItemsTracker(
     "blog",
     (blogData?.data || []).map((b: Blog) => b._id)
   );
   const [deleteBlog, { isLoading: isDeleting }] = useDeleteBlogMutation();
+  const newCount = blogData?.data?.filter((b: Blog) => isNew(b._id)).length || 0;
 
   const blogs: Blog[] = blogData?.data || [];
   const pagination = blogData?.pagination || { total: 0, limit: 10, page: 1, totalPage: 1 };
@@ -115,19 +117,22 @@ export default function BlogManagement() {
             Manage and organize all your blog posts
           </p>
         </div>
-        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogTrigger asChild>
-            <Button
-              className="flex items-center gap-2 h-11 px-6 rounded-lg text-base font-semibold text-white cursor-pointer transition-all hover:opacity-90 hover:shadow-lg"
-              style={{ backgroundColor: "#F1913D" }}
-            >
-              <Plus className="w-5 h-5" /> Create New Blog
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-[100vw] mt-5 h-full p-0 border-none bg-black/20 backdrop-blur-sm [&>button]:hidden shadow-none">
-            <CreateBlogForm onCancel={() => setIsCreateOpen(false)} />
-          </DialogContent>
-        </Dialog>
+        <div className="flex items-center gap-3">
+          <MarkAllSeenButton count={newCount} onClick={() => dismissAll()} />
+          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+            <DialogTrigger asChild>
+              <Button
+                className="flex items-center gap-2 h-11 px-6 rounded-lg text-base font-semibold text-white cursor-pointer transition-all hover:opacity-90 hover:shadow-lg"
+                style={{ backgroundColor: "#F1913D" }}
+              >
+                <Plus className="w-5 h-5" /> Create New Blog
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-[100vw] mt-5 h-full p-0 border-none bg-black/20 backdrop-blur-sm [&>button]:hidden shadow-none">
+              <CreateBlogForm onCancel={() => setIsCreateOpen(false)} />
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {/* Blog Cards Grid */}

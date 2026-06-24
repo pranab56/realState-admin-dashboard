@@ -12,6 +12,7 @@ import {
 import { useGetRevenueQuery } from "@/features/revenue/revenueApi";
 import { useMarkPageSeen } from "@/hooks/useMarkPageSeen";
 import { useNewItemsTracker } from "@/hooks/useNewItemsTracker";
+import MarkAllSeenButton from "@/components/notifications/MarkAllSeenButton";
 import NewPulseDot from "@/components/notifications/NewPulseDot";
 
 import { format } from "date-fns";
@@ -105,12 +106,13 @@ export default function RevenueManagement() {
 
   const { data: revenueData, isLoading, isError } = useGetRevenueQuery({ page }, { pollingInterval: 3000 });
   useMarkPageSeen("revenue", revenueData?.pagination?.total);
-  const { isNew, dismiss } = useNewItemsTracker(
+  const { isNew, dismiss, dismissAll } = useNewItemsTracker(
     "revenue",
     (revenueData?.data || []).map((t: Transaction) => t._id)
   );
 
   const transactions = revenueData?.data || [];
+  const newCount = transactions.filter((t: Transaction) => isNew(t._id)).length;
   const pagination = revenueData?.pagination || { total: 0, limit: 10, page: 1, totalPage: 1 };
 
   const handleViewDetails = (txn: Transaction) => {
@@ -185,8 +187,9 @@ export default function RevenueManagement() {
         <Card className="border-none shadow-sm bg-white overflow-hidden">
 
           {/* Header */}
-          <div className="px-6 pt-3 pb-3">
+          <div className="px-6 pt-3 pb-3 flex items-center justify-between">
             <h2 className="text-lg font-bold" style={{ color: "#2C2E33" }}>Recent Transactions</h2>
+            <MarkAllSeenButton count={newCount} onClick={() => dismissAll()} />
           </div>
 
           {/* Table */}

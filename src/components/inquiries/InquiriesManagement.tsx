@@ -14,6 +14,7 @@ import { useGetInquiriesQuery } from "@/features/inquiries/inquiriesApi";
 import { CustomLoading } from "@/hooks/CustomLoading";
 import { useMarkPageSeen } from "@/hooks/useMarkPageSeen";
 import { useNewItemsTracker } from "@/hooks/useNewItemsTracker";
+import MarkAllSeenButton from "@/components/notifications/MarkAllSeenButton";
 import NewPulseDot from "@/components/notifications/NewPulseDot";
 import { format } from "date-fns";
 import { BadgeCheck, ChevronLeft, ChevronRight, Eye, MapPin, MessageSquare, XCircle } from "lucide-react";
@@ -82,12 +83,13 @@ export default function InquiriesManagement() {
 
   const { data: inquiriesData, isLoading, isError } = useGetInquiriesQuery({ page }, { pollingInterval: 3000 });
   useMarkPageSeen("inquiries", inquiriesData?.pagination?.total);
-  const { isNew, dismiss } = useNewItemsTracker(
+  const { isNew, dismiss, dismissAll } = useNewItemsTracker(
     "inquiries",
     (inquiriesData?.data || []).map((i: Inquiry) => i._id)
   );
 
   const inquiries: Inquiry[] = inquiriesData?.data || [];
+  const newCount = inquiries.filter((i) => isNew(i._id)).length;
   const pagination = inquiriesData?.pagination || { total: 0, limit: 10, page: 1, totalPage: 1 };
 
   if (isLoading) return <CustomLoading />;
@@ -108,6 +110,7 @@ export default function InquiriesManagement() {
             All Inquiries
             <span className="ml-2 text-sm font-normal" style={{ color: "#6C757D" }}>({TOTAL})</span>
           </h2>
+          <MarkAllSeenButton count={newCount} onClick={() => dismissAll()} />
         </div>
 
         <div className="overflow-x-auto">

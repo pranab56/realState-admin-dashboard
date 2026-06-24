@@ -14,6 +14,7 @@ import { useGetReviewsQuery } from "@/features/review/reviewApi";
 import { CustomLoading } from "@/hooks/CustomLoading";
 import { useMarkPageSeen } from "@/hooks/useMarkPageSeen";
 import { useNewItemsTracker } from "@/hooks/useNewItemsTracker";
+import MarkAllSeenButton from "@/components/notifications/MarkAllSeenButton";
 import NewPulseDot from "@/components/notifications/NewPulseDot";
 import { baseURL } from "@/utils/BaseURL";
 import { format } from "date-fns";
@@ -117,12 +118,13 @@ export default function ReviewManagement() {
 
   const { data: reviewData, isLoading, isError } = useGetReviewsQuery({ page }, { pollingInterval: 3000 });
   useMarkPageSeen("review", reviewData?.pagination?.total);
-  const { isNew, dismiss } = useNewItemsTracker(
+  const { isNew, dismiss, dismissAll } = useNewItemsTracker(
     "review",
     (reviewData?.data || []).map((r: Review) => r._id)
   );
 
   const reviews = reviewData?.data || [];
+  const newCount = reviews.filter((r: Review) => isNew(r._id)).length;
   const pagination = reviewData?.pagination || { total: 0, limit: 10, page: 1, totalPage: 1 };
 
   if (isLoading) return <CustomLoading />;
@@ -157,11 +159,12 @@ export default function ReviewManagement() {
 
       {/* ── Table ── */}
       <Card className="border-none shadow-sm bg-white overflow-hidden">
-        <div className="px-6 py-4">
+        <div className="px-6 py-4 flex items-center justify-between">
           <h2 className="text-base font-bold" style={{ color: "#2C2E33" }}>
             All Reviews
             <span className="ml-2 text-sm font-normal" style={{ color: "#6C757D" }}>({TOTAL})</span>
           </h2>
+          <MarkAllSeenButton count={newCount} onClick={() => dismissAll()} />
         </div>
 
         <div className="overflow-x-auto">

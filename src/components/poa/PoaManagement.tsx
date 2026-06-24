@@ -1,5 +1,6 @@
 "use client";
 
+import MarkAllSeenButton from "@/components/notifications/MarkAllSeenButton";
 import NewPulseDot from "@/components/notifications/NewPulseDot";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -88,12 +89,13 @@ export default function PoaManagement() {
 
   const { data: poaData, isLoading, isError } = useGetPoaQuery({ page }, { pollingInterval: 3000 });
   useMarkPageSeen("poa", poaData?.pagination?.total);
-  const { isNew, dismiss } = useNewItemsTracker(
+  const { isNew, dismiss, dismissAll } = useNewItemsTracker(
     "poa",
     (poaData?.data || []).map((c: Consultation) => c._id)
   );
 
   const consultations: Consultation[] = poaData?.data || [];
+  const newCount = consultations.filter((c) => isNew(c._id)).length;
   const pagination = poaData?.pagination || { total: 0, limit: 10, page: 1, totalPage: 1 };
 
   if (isLoading) return <CustomLoading />;
@@ -114,6 +116,7 @@ export default function PoaManagement() {
             All Consultations
             <span className="ml-2 text-sm font-normal" style={{ color: "#6C757D" }}>({TOTAL})</span>
           </h2>
+          <MarkAllSeenButton count={newCount} onClick={() => dismissAll()} />
         </div>
 
         <div className="overflow-x-auto">

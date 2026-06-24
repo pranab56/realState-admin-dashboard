@@ -1,6 +1,7 @@
 "use client";
 
 import DeleteConfirmationDialog from "@/components/confirmation/deleteConfirmationDialog";
+import MarkAllSeenButton from "@/components/notifications/MarkAllSeenButton";
 import NewPulseDot from "@/components/notifications/NewPulseDot";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -130,7 +131,7 @@ export default function ReservationManagement() {
 
   const { data: reservationData, isLoading, isError } = useGetReservationQuery({ page }, { pollingInterval: 3000 });
   useMarkPageSeen("reservation", reservationData?.pagination?.total);
-  const { isNew, dismiss } = useNewItemsTracker(
+  const { isNew, dismiss, dismissAll } = useNewItemsTracker(
     "reservation",
     (reservationData?.data || []).map((r: Reservation) => r._id)
   );
@@ -138,6 +139,7 @@ export default function ReservationManagement() {
   const [deleteReservation, { isLoading: isDeleting }] = useDeleteReservationMutation();
 
   const reservations: Reservation[] = reservationData?.data || [];
+  const newCount = reservations.filter((r: Reservation) => isNew(r._id)).length;
   const pagination = reservationData?.pagination || { total: 0, limit: 10, page: 1, totalPage: 1 };
 
   if (isLoading) return <CustomLoading />;
@@ -186,6 +188,7 @@ export default function ReservationManagement() {
             All Reservations
             <span className="ml-2 text-sm font-normal" style={{ color: "#6C757D" }}>({TOTAL})</span>
           </h2>
+          <MarkAllSeenButton count={newCount} onClick={() => dismissAll()} />
         </div>
 
         <div className="overflow-x-auto">

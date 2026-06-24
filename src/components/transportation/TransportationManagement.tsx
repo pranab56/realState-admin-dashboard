@@ -14,6 +14,7 @@ import { useGetTransportationQuery } from "@/features/transportation/transportat
 import { CustomLoading } from "@/hooks/CustomLoading";
 import { useMarkPageSeen } from "@/hooks/useMarkPageSeen";
 import { useNewItemsTracker } from "@/hooks/useNewItemsTracker";
+import MarkAllSeenButton from "@/components/notifications/MarkAllSeenButton";
 import NewPulseDot from "@/components/notifications/NewPulseDot";
 import { format } from "date-fns";
 import {
@@ -96,12 +97,13 @@ export default function TransportationManagement() {
 
   const { data: rideData, isLoading, isError } = useGetTransportationQuery({ page }, { pollingInterval: 3000 });
   useMarkPageSeen("transportation", rideData?.pagination?.total);
-  const { isNew, dismiss } = useNewItemsTracker(
+  const { isNew, dismiss, dismissAll } = useNewItemsTracker(
     "transportation",
     (rideData?.data || []).map((r: Ride) => r._id)
   );
 
   const rides = rideData?.data || [];
+  const newCount = rides.filter((r: Ride) => isNew(r._id)).length;
   const pagination = rideData?.pagination || { total: 0, limit: 10, page: 1, totalPage: 1 };
 
   if (isLoading) return <CustomLoading />;
@@ -117,11 +119,12 @@ export default function TransportationManagement() {
 
       {/* ── Table card ── */}
       <Card className="border-none shadow-sm bg-white overflow-hidden">
-        <div className="px-6 py-4">
+        <div className="px-6 py-4 flex items-center justify-between">
           <h2 className="text-base font-bold" style={{ color: "#2C2E33" }}>
             All Ride Requests
             <span className="ml-2 text-sm font-normal" style={{ color: "#6C757D" }}>({TOTAL})</span>
           </h2>
+          <MarkAllSeenButton count={newCount} onClick={() => dismissAll()} />
         </div>
 
         <div className="overflow-x-auto">

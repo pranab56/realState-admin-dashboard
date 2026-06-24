@@ -29,6 +29,7 @@ import { CustomLoading } from "../../hooks/CustomLoading";
 import { useMarkPageSeen } from "../../hooks/useMarkPageSeen";
 import { useNewItemsTracker } from "../../hooks/useNewItemsTracker";
 import { baseURL } from "../../utils/BaseURL";
+import MarkAllSeenButton from "../notifications/MarkAllSeenButton";
 import NewPulseDot from "../notifications/NewPulseDot";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "../ui/alert-dialog";
 import CreateAdvertisementForm from "./CreateAdvertisementForm";
@@ -77,10 +78,11 @@ export default function AdvertisementManagement() {
   const pagination = adData?.pagination || { total: ads.length, limit: 10, page: 1, totalPage: 1 };
 
   useMarkPageSeen("advertisement", adData?.pagination?.total ?? ads.length);
-  const { isNew, dismiss } = useNewItemsTracker(
+  const { isNew, dismiss, dismissAll } = useNewItemsTracker(
     "advertisement",
     ads.map((a) => a._id)
   );
+  const newCount = ads.filter((a) => isNew(a._id)).length;
 
   const handleEdit = (ad: Advertisement) => {
     setSelectedAd(ad);
@@ -124,19 +126,22 @@ export default function AdvertisementManagement() {
             Manage and organize all your advertisements
           </p>
         </div>
-        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogTrigger asChild>
-            <Button
-              className="flex items-center gap-2 h-11 px-6 rounded-lg text-base font-semibold text-white cursor-pointer transition-all hover:opacity-90 hover:shadow-lg"
-              style={{ backgroundColor: "#F1913D" }}
-            >
-              <Plus className="w-5 h-5" /> Create Advertisement
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-[100vw] mt-5 h-full p-0 border-none bg-black/20 backdrop-blur-sm [&>button]:hidden shadow-none">
-            <CreateAdvertisementForm onCancel={() => setIsCreateOpen(false)} />
-          </DialogContent>
-        </Dialog>
+        <div className="flex items-center gap-3">
+          <MarkAllSeenButton count={newCount} onClick={() => dismissAll()} />
+          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+            <DialogTrigger asChild>
+              <Button
+                className="flex items-center gap-2 h-11 px-6 rounded-lg text-base font-semibold text-white cursor-pointer transition-all hover:opacity-90 hover:shadow-lg"
+                style={{ backgroundColor: "#F1913D" }}
+              >
+                <Plus className="w-5 h-5" /> Create Advertisement
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-[100vw] mt-5 h-full p-0 border-none bg-black/20 backdrop-blur-sm [&>button]:hidden shadow-none">
+              <CreateAdvertisementForm onCancel={() => setIsCreateOpen(false)} />
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {/* List */}

@@ -26,6 +26,7 @@ import {
 import { useGetManageListingQuery } from "@/features/manageProperty/managePropertyApi";
 import { useMarkPageSeen } from "@/hooks/useMarkPageSeen";
 import { useNewItemsTracker } from "@/hooks/useNewItemsTracker";
+import MarkAllSeenButton from "@/components/notifications/MarkAllSeenButton";
 import NewPulseDot from "@/components/notifications/NewPulseDot";
 import { baseURL } from "@/utils/BaseURL";
 import {
@@ -374,12 +375,13 @@ export default function PropertyListing() {
 
   const { data: propertyListingData, isLoading, isError } = useGetManageListingQuery(params, { pollingInterval: 3000 });
   useMarkPageSeen("propertyListing", propertyListingData?.pagination?.total);
-  const { isNew, dismiss } = useNewItemsTracker(
+  const { isNew, dismiss, dismissAll } = useNewItemsTracker(
     "propertyListing",
     (propertyListingData?.data || []).map((p: Property) => p._id)
   );
 
   const properties = propertyListingData?.data || [];
+  const newCount = properties.filter((p: Property) => isNew(p._id)).length;
   const pagination = propertyListingData?.pagination || { total: 0, limit: 10, page: 1, totalPage: 1 };
 
   if (isLoading) return <CustomLoading />;
@@ -478,14 +480,17 @@ export default function PropertyListing() {
       <Card className="border-none shadow-sm bg-white overflow-hidden">
         <div className="flex items-center justify-between px-6 py-4">
           <h2 className="text-base font-bold" style={{ color: "#2C2E33" }}>All Listings</h2>
-          <Button
-            onClick={() => router.push("/property-management/add")}
-            className="h-9 px-4 text-sm font-semibold rounded-lg gap-2 cursor-pointer transition-opacity hover:opacity-90"
-            style={{ backgroundColor: "#F1913D", color: "#FFFFFF" }}
-          >
-            <Plus className="w-4 h-4" />
-            Add New Listing
-          </Button>
+          <div className="flex items-center gap-3">
+            <MarkAllSeenButton count={newCount} onClick={() => dismissAll()} />
+            <Button
+              onClick={() => router.push("/property-management/add")}
+              className="h-9 px-4 text-sm font-semibold rounded-lg gap-2 cursor-pointer transition-opacity hover:opacity-90"
+              style={{ backgroundColor: "#F1913D", color: "#FFFFFF" }}
+            >
+              <Plus className="w-4 h-4" />
+              Add New Listing
+            </Button>
+          </div>
         </div>
 
         <div className="overflow-x-auto">

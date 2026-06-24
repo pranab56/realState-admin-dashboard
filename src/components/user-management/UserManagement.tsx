@@ -24,6 +24,7 @@ import { CustomLoading } from "../../hooks/CustomLoading";
 import { useMarkPageSeen } from "../../hooks/useMarkPageSeen";
 import { useNewItemsTracker } from "../../hooks/useNewItemsTracker";
 import { baseURL } from '../../utils/BaseURL';
+import MarkAllSeenButton from "../notifications/MarkAllSeenButton";
 import NewPulseDot from "../notifications/NewPulseDot";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 
@@ -80,7 +81,7 @@ export default function UserManagement() {
 
   const { data: customerData, isLoading, isError } = useGetCustomarQuery({ page, limit: 10 }, { pollingInterval: 3000 });
   useMarkPageSeen("customer", customerData?.pagination?.total);
-  const { isNew, dismiss } = useNewItemsTracker(
+  const { isNew, dismiss, dismissAll } = useNewItemsTracker(
     "customer",
     (customerData?.data || []).map((u: User) => u._id)
   );
@@ -89,6 +90,7 @@ export default function UserManagement() {
   if (isError) return <div className="p-10 text-center text-red-500">Failed to load customers</div>;
 
   const customers: User[] = customerData?.data || [];
+  const newCount = customers.filter((u: User) => isNew(u._id)).length;
   const pagination = customerData?.pagination || { total: 0, limit: 10, page: 1, totalPage: 1 };
 
   /* filter rows (defaulting to all since tabs are currently hidden) */
@@ -150,6 +152,7 @@ export default function UserManagement() {
           {/* Header */}
           <div className="flex items-center justify-between px-6 pt-5 pb-3">
             <h2 className="text-base font-bold" style={{ color: "#2C2E33" }}>Customer List</h2>
+            <MarkAllSeenButton count={newCount} onClick={() => dismissAll()} />
           </div>
 
           {/* Table */}

@@ -1,5 +1,6 @@
 "use client";
 
+import MarkAllSeenButton from "@/components/notifications/MarkAllSeenButton";
 import NewPulseDot from "@/components/notifications/NewPulseDot";
 import { Card } from "@/components/ui/card";
 import {
@@ -63,12 +64,13 @@ export default function NewsletterManagement() {
 
   const { data: newsletterData, isLoading, isError } = useGetNewsLetterQuery({ page }, { pollingInterval: 3000 });
   useMarkPageSeen("newsletter", newsletterData?.pagination?.total);
-  const { isNew, dismiss } = useNewItemsTracker(
+  const { isNew, dismiss, dismissAll } = useNewItemsTracker(
     "newsletter",
     (newsletterData?.data || []).map((s: NewsletterSubscriber) => s._id)
   );
 
   const subscribers: NewsletterSubscriber[] = newsletterData?.data || [];
+  const newCount = subscribers.filter((s) => isNew(s._id)).length;
   const pagination = newsletterData?.pagination || { total: 0, limit: 10, page: 1, totalPage: 1 };
 
   if (isLoading) return <CustomLoading />;
@@ -89,6 +91,7 @@ export default function NewsletterManagement() {
               ({TOTAL})
             </span>
           </h2>
+          <MarkAllSeenButton count={newCount} onClick={() => dismissAll()} />
         </div>
 
         <div className="overflow-x-auto">

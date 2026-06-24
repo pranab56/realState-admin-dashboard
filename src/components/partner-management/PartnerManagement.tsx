@@ -31,6 +31,7 @@ import { CustomLoading } from "../../hooks/CustomLoading";
 import { useMarkPageSeen } from "../../hooks/useMarkPageSeen";
 import { useNewItemsTracker } from "../../hooks/useNewItemsTracker";
 import { baseURL } from "../../utils/BaseURL";
+import MarkAllSeenButton from "../notifications/MarkAllSeenButton";
 import NewPulseDot from "../notifications/NewPulseDot";
 
 /* ── Types ─────────────────────────────────────────────────── */
@@ -83,7 +84,7 @@ export default function PartnerManagement() {
 
   const { data: partnerData, isLoading, isError } = useGetPartnerQuery({ page, limit: 10 }, { pollingInterval: 3000 });
   useMarkPageSeen("partner", partnerData?.pagination?.total);
-  const { isNew, dismiss } = useNewItemsTracker(
+  const { isNew, dismiss, dismissAll } = useNewItemsTracker(
     "partner",
     (partnerData?.data || []).map((p: Partner) => p._id)
   );
@@ -92,6 +93,7 @@ export default function PartnerManagement() {
   if (isError) return <div className="p-10 text-center text-red-500">Failed to load partners</div>;
 
   const partners: Partner[] = partnerData?.data || [];
+  const newCount = partners.filter((p: Partner) => isNew(p._id)).length;
   const pagination = partnerData?.pagination || { total: 0, limit: 10, page: 1, totalPage: 1 };
 
   /* filtered rows (defaulting to all since tabs are currently hidden) */
@@ -151,8 +153,9 @@ export default function PartnerManagement() {
         <Card className="border-none shadow-sm bg-white overflow-hidden p-0">
 
           {/* Header */}
-          <div className="px-6 pt-5 pb-3">
+          <div className="px-6 pt-5 pb-3 flex items-center justify-between">
             <h2 className="text-base font-bold" style={{ color: "#2C2E33" }}>Partners List</h2>
+            <MarkAllSeenButton count={newCount} onClick={() => dismissAll()} />
           </div>
 
           {/* Table */}

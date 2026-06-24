@@ -23,6 +23,7 @@ import { useState } from "react";
 import { CustomLoading } from "../../hooks/CustomLoading";
 import { useMarkPageSeen } from "../../hooks/useMarkPageSeen";
 import { useNewItemsTracker } from "../../hooks/useNewItemsTracker";
+import MarkAllSeenButton from "../notifications/MarkAllSeenButton";
 import NewPulseDot from "../notifications/NewPulseDot";
 
 function StatusBadge({ status }: { status?: string }) {
@@ -77,12 +78,13 @@ export default function ManageHotel() {
 
   const { data: hotelData, isLoading, isError } = useGetManageHotelsQuery(params, { pollingInterval: 3000 });
   useMarkPageSeen("propertyHotel", hotelData?.pagination?.total);
-  const { isNew, dismiss } = useNewItemsTracker(
+  const { isNew, dismiss, dismissAll } = useNewItemsTracker(
     "propertyHotel",
     (hotelData?.data || []).map((h: Hotel) => h._id)
   );
 
   const hotels = hotelData?.data || [];
+  const newCount = hotels.filter((h: Hotel) => isNew(h._id)).length;
   const pagination = hotelData?.pagination || { total: 0, limit: 10, page: 1, totalPage: 1 };
 
   if (isLoading) return <CustomLoading />;
@@ -158,6 +160,7 @@ export default function ManageHotel() {
       <Card className="border-none shadow-sm bg-white overflow-hidden">
         <div className="flex items-center justify-between px-6 py-4">
           <h2 className="text-base font-bold" style={{ color: "#2C2E33" }}>All Hotels & Accommodations</h2>
+          <MarkAllSeenButton count={newCount} onClick={() => dismissAll()} />
         </div>
 
         <div className="overflow-x-auto">

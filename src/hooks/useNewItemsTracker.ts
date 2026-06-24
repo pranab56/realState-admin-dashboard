@@ -1,6 +1,8 @@
 "use client";
 
+import { clearUnseenCount } from "@/features/notifications/newDataSlice";
 import { useEffect, useRef, useState } from "react";
+import { useDispatch } from "react-redux";
 
 const seededFlagKey = (key: string) => `seeded:${key}`;
 const viewedKey = (key: string) => `viewedIds:${key}`;
@@ -32,6 +34,7 @@ function writeViewed(key: string, ids: Set<string>) {
  * flooded with dots on day one.
  */
 export function useNewItemsTracker(key: string, currentIds: string[] = []) {
+  const dispatch = useDispatch();
   const [viewed, setViewed] = useState<Set<string>>(() => readViewed(key));
   const seededRef = useRef(false);
 
@@ -62,5 +65,20 @@ export function useNewItemsTracker(key: string, currentIds: string[] = []) {
     });
   };
 
-  return { isNew, dismiss };
+  /**
+   * Marks every given id (defaults to the entity's current page of ids) as
+   * seen in one batch, and clears this module's sidebar/header unread count
+   * — powers the per-page "Mark All as Seen" action.
+   */
+  const dismissAll = (ids: string[] = currentIds) => {
+    setViewed((prev) => {
+      const next = new Set(prev);
+      ids.forEach((id) => next.add(id));
+      writeViewed(key, next);
+      return next;
+    });
+    dispatch(clearUnseenCount(key));
+  };
+
+  return { isNew, dismiss, dismissAll };
 }
