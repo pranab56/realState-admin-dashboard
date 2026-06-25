@@ -79,6 +79,7 @@ export default function CreateBlogForm({
   // publish date will be set automatically to today's date on submit
   const [tags, setTags] = useState<string[]>(initialData?.tags || []);
   const [tagInput, setTagInput] = useState("");
+  const [isManualCategory, setIsManualCategory] = useState(false);
 
   /* ── Multiple image state ── */
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -274,6 +275,7 @@ export default function CreateBlogForm({
               <TiptapEditor
                 content={formData.content}
                 onChange={(richText) => setFormData({ ...formData, content: richText })}
+                editorContentClassName="h-[300px]"
               />
             </div>
           </div>
@@ -325,28 +327,49 @@ export default function CreateBlogForm({
               </Select>
             </div>
 
-            {/* Category — loaded from API */}
-            <div className="space-y-1.5">
-              <Label className="text-sm font-semibold">Category</Label>
-              <Select
-                value={formData.category}
-                onValueChange={(v) => setFormData({ ...formData, category: v })}
-              >
-                <SelectTrigger className="h-11 rounded-sm w-full py-5 border" style={inputStyle}>
-                  <SelectValue placeholder="Select a category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.length > 0 ? (
-                    categories.map((cat) => (
+            {/* Category — Selection & Creation */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <Label className="text-sm font-semibold text-[#2C2E33]">Category</Label>
+                {categories.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsManualCategory(!isManualCategory);
+                      setFormData((prev) => ({ ...prev, category: "" }));
+                    }}
+                    className="text-[11px] font-bold text-[#F1913D] hover:underline transition-all"
+                  >
+                    {isManualCategory ? "Select from list" : "+ Create New Category"}
+                  </button>
+                )}
+              </div>
+
+              {isManualCategory || categories.length === 0 ? (
+                <Input
+                  className={inputCls}
+                  style={inputStyle}
+                  placeholder="Enter custom category name"
+                  value={formData.category}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                />
+              ) : (
+                <Select
+                  value={formData.category}
+                  onValueChange={(v) => setFormData({ ...formData, category: v })}
+                >
+                  <SelectTrigger className="h-11 rounded-sm w-full py-5 border bg-[#FAFAFA]" style={inputStyle}>
+                    <SelectValue placeholder="Choose a category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((cat) => (
                       <SelectItem key={cat} value={cat}>
                         {cat}
                       </SelectItem>
-                    ))
-                  ) : (
-                    <div className="px-3 py-2 text-sm text-gray-400">Loading categories...</div>
-                  )}
-                </SelectContent>
-              </Select>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
 
             <div className="space-y-1.5">

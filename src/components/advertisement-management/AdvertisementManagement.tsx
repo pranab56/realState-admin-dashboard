@@ -137,7 +137,7 @@ export default function AdvertisementManagement() {
                 <Plus className="w-5 h-5" /> Create Advertisement
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-[100vw] mt-5 h-full p-0 border-none bg-black/20 backdrop-blur-sm [&>button]:hidden shadow-none">
+            <DialogContent className="max-w-[100vw] mt-5 h-full p-0 border-none bg-transparent [&>button]:hidden shadow-none">
               <CreateAdvertisementForm onCancel={() => setIsCreateOpen(false)} />
             </DialogContent>
           </Dialog>
@@ -301,7 +301,7 @@ export default function AdvertisementManagement() {
 
       {/* ── Edit Modal ── */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent className="max-w-[100vw] mt-5 h-full p-0 border-none bg-black/20 backdrop-blur-sm [&>button]:hidden shadow-none">
+        <DialogContent className="max-w-[100vw] mt-5 h-full p-0 border-none bg-transparent [&>button]:hidden shadow-none">
           <CreateAdvertisementForm initialData={selectedAd || undefined} onCancel={() => setIsEditOpen(false)} />
         </DialogContent>
       </Dialog>

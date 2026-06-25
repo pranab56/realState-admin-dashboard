@@ -54,6 +54,7 @@ export default function BlogManagement() {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isContentExpanded, setIsContentExpanded] = useState(false);
   const [selectedBlog, setSelectedBlog] = useState<Blog | null>(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
@@ -72,6 +73,7 @@ export default function BlogManagement() {
   const handleViewDetails = (blog: Blog) => {
     setSelectedBlog(blog);
     setActiveImageIndex(0);
+    setIsContentExpanded(false);
     setIsDetailsOpen(true);
     dismiss(blog._id);
   };
@@ -128,7 +130,7 @@ export default function BlogManagement() {
                 <Plus className="w-5 h-5" /> Create New Blog
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-[100vw] mt-5 h-full p-0 border-none bg-black/20 backdrop-blur-sm [&>button]:hidden shadow-none">
+            <DialogContent className="max-w-[100vw] mt-5 h-full p-0 border-none bg-transparent [&>button]:hidden shadow-none">
               <CreateBlogForm onCancel={() => setIsCreateOpen(false)} />
             </DialogContent>
           </Dialog>
@@ -284,7 +286,7 @@ export default function BlogManagement() {
 
       {/* ── Edit Modal ── */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent className="max-w-[100vw] mt-5 h-full p-0 border-none bg-black/20 backdrop-blur-sm [&>button]:hidden shadow-none">
+        <DialogContent className="max-w-[100vw] mt-5 h-full p-0 border-none bg-transparent [&>button]:hidden shadow-none">
           <CreateBlogForm initialData={selectedBlog || undefined} onCancel={() => setIsEditOpen(false)} />
         </DialogContent>
       </Dialog>
@@ -394,9 +396,22 @@ export default function BlogManagement() {
               <div className="border-t pt-4">
                 <p className="text-sm font-bold text-gray-700 mb-2">Content Preview</p>
                 <div
-                  className="prose prose-sm max-w-none text-gray-700 line-clamp-[10]"
+                  className={`prose prose-sm max-w-none text-gray-700 transition-all duration-300 ${
+                    isContentExpanded ? "" : "line-clamp-4"
+                  }`}
                   dangerouslySetInnerHTML={{ __html: selectedBlog.content }}
                 />
+                <button
+                  type="button"
+                  onClick={() => setIsContentExpanded(!isContentExpanded)}
+                  className="text-[#F1913D] text-sm font-bold mt-2 hover:underline cursor-pointer flex items-center gap-1"
+                >
+                  {isContentExpanded ? (
+                    <>See Less <motion.span animate={{ rotate: 180 }}>↑</motion.span></>
+                  ) : (
+                    <>See More <motion.span animate={{ rotate: 0 }}>↓</motion.span></>
+                  )}
+                </button>
               </div>
             </div>
           )}

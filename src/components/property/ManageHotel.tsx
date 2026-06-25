@@ -17,7 +17,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useGetManageHotelsQuery } from "@/features/manageProperty/managePropertyApi";
-import { BadgeCheck, ChevronLeft, ChevronRight, MapPin, XCircle } from "lucide-react";
+import { ChevronLeft, ChevronRight, MapPin } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
 import { CustomLoading } from "../../hooks/CustomLoading";
@@ -69,12 +69,10 @@ export default function ManageHotel() {
   const [page, setPage] = useState(1);
   const [structureType, setStructureType] = useState("");
   const [status, setStatus] = useState("");
-  const [isVerified, setIsVerified] = useState("");
 
   const params: Record<string, string | number> = { page, limit: 10 };
   if (structureType) params.structureType = structureType;
   if (status) params.status = status;
-  if (isVerified !== "") params.isVerified = isVerified;
 
   const { data: hotelData, isLoading, isError } = useGetManageHotelsQuery(params, { pollingInterval: 3000 });
   useMarkPageSeen("propertyHotel", hotelData?.pagination?.total);
@@ -139,20 +137,7 @@ export default function ManageHotel() {
             </Select>
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium" style={{ color: "#6C757D" }}>Verification</label>
-            <Select onValueChange={handleFilterChange(setIsVerified)} defaultValue="all">
-              <SelectTrigger className="h-10 w-full text-sm rounded-lg border"
-                style={{ borderColor: "#F2F2F2", backgroundColor: "#FAFAFA", color: "#2C2E33" }}>
-                <SelectValue placeholder="Any" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Any</SelectItem>
-                <SelectItem value="true">Verified</SelectItem>
-                <SelectItem value="false">Unverified</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+
         </div>
       </Card>
 
@@ -172,7 +157,6 @@ export default function ManageHotel() {
                 <TableHead className="text-xs font-semibold" style={{ color: "#6C757D" }}>Amenities</TableHead>
                 <TableHead className="text-xs font-semibold" style={{ color: "#6C757D" }}>Price / Night</TableHead>
                 <TableHead className="text-xs font-semibold" style={{ color: "#6C757D" }}>Status</TableHead>
-                <TableHead className="text-xs font-semibold" style={{ color: "#6C757D" }}>Verification</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -230,18 +214,6 @@ export default function ManageHotel() {
 
                     <TableCell>
                       <StatusBadge status={hotel.status} />
-                    </TableCell>
-
-                    <TableCell>
-                      {hotel.isVerified ? (
-                        <span className="flex items-center gap-1.5 text-sm font-semibold" style={{ color: "#2B9724" }}>
-                          <BadgeCheck className="w-4 h-4" /> Verified
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-1.5 text-sm font-semibold text-gray-400">
-                          <XCircle className="w-4 h-4" /> Unverified
-                        </span>
-                      )}
                     </TableCell>
                   </TableRow>
                 ))

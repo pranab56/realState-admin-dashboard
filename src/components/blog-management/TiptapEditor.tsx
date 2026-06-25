@@ -5,23 +5,21 @@ import Link from "@tiptap/extension-link";
 import Underline from "@tiptap/extension-underline";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { useEffect } from "react";
 import {
   Bold,
-  Code,
   Italic,
-  Link2,
   List, ListOrdered,
-  Maximize2,
   Underline as UnderlineIcon
 } from "lucide-react";
+import { useEffect } from "react";
 
 interface TiptapEditorProps {
   content: string;
   onChange: (richText: string) => void;
+  editorContentClassName?: string;
 }
 
-export default function TiptapEditor({ content, onChange }: TiptapEditorProps) {
+export default function TiptapEditor({ content, onChange, editorContentClassName }: TiptapEditorProps) {
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
@@ -37,7 +35,7 @@ export default function TiptapEditor({ content, onChange }: TiptapEditorProps) {
     },
     editorProps: {
       attributes: {
-        class: "prose prose-sm focus:outline-none max-w-none min-h-[350px] p-6 text-gray-700",
+        class: cn("prose prose-sm focus:outline-none max-w-none min-h-[150px] p-6 text-gray-700"),
       },
     },
   });
@@ -58,23 +56,6 @@ export default function TiptapEditor({ content, onChange }: TiptapEditorProps) {
   const toggleUnderline = () => editor.chain().focus().toggleUnderline().run();
   const toggleBulletList = () => editor.chain().focus().toggleBulletList().run();
   const toggleOrderedList = () => editor.chain().focus().toggleOrderedList().run();
-  const toggleCode = () => editor.chain().focus().toggleCode().run();
-
-  const setLink = () => {
-    const previousUrl = editor.getAttributes("link").href;
-    const url = window.prompt("URL", previousUrl);
-
-    if (url === null) {
-      return;
-    }
-
-    if (url === "") {
-      editor.chain().focus().extendMarkRange("link").unsetLink().run();
-      return;
-    }
-
-    editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
-  };
 
   const ToolbarButton = ({
     onClick,
@@ -119,25 +100,12 @@ export default function TiptapEditor({ content, onChange }: TiptapEditorProps) {
         <ToolbarButton onClick={toggleOrderedList} isActive={editor.isActive("orderedList")}>
           <ListOrdered className="w-4 h-4" />
         </ToolbarButton>
-
-        <div className="w-px h-4 bg-gray-300 mx-1" />
-
-        <ToolbarButton onClick={setLink} isActive={editor.isActive("link")}>
-          <Link2 className="w-4 h-4" />
-        </ToolbarButton>
-        <ToolbarButton onClick={toggleCode} isActive={editor.isActive("code")}>
-          <Code className="w-4 h-4" />
-        </ToolbarButton>
-
-        <div className="flex-1" />
-
-        <button type="button" className="p-1.5 rounded hover:bg-white transition-colors cursor-pointer text-gray-600">
-          <Maximize2 className="w-4 h-4" />
-        </button>
       </div>
 
       {/* Editor Content */}
-      <EditorContent editor={editor} />
+      <div className={cn("overflow-y-auto custom-scrollbar border-t", editorContentClassName || "h-[700px]")} style={{ borderColor: "#F2F2F2" }}>
+        <EditorContent editor={editor} />
+      </div>
 
       {/* CSS to handle placeholders and basic prose styling if needed */}
       <style jsx global>{`
