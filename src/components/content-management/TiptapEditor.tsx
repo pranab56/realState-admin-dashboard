@@ -144,12 +144,51 @@ export default function TiptapEditor({ content, onChange }: TiptapEditorProps) {
           outline: none;
         }
         .tiptap ul {
-          list-style-type: disc;
-          padding-left: 1.5rem;
+          list-style-type: disc !important;
+          padding-left: 1.5rem !important;
+          margin: 0.5rem 0 !important;
         }
         .tiptap ol {
-          list-style-type: decimal;
-          padding-left: 1.5rem;
+          list-style-type: decimal !important;
+          padding-left: 1.5rem !important;
+          margin: 0.5rem 0 !important;
+        }
+        .tiptap ul li,
+        .tiptap ol li {
+          display: list-item !important;
+        }
+        .tiptap ul li p,
+        .tiptap ol li p {
+          margin: 0.15rem 0;
+        }
+        .tiptap ul li::marker {
+          color: #6B7280;
+        }
+        .tiptap ol li::marker {
+          color: #6B7280;
+          font-weight: 500;
+        }
+        .tiptap blockquote {
+          border-left: 3px solid #F1913D;
+          padding-left: 1rem;
+          margin: 0.75rem 0;
+          color: #6B7280;
+          font-style: italic;
+        }
+        .tiptap h1 {
+          font-size: 1.75rem;
+          font-weight: 700;
+          margin: 1rem 0 0.5rem;
+        }
+        .tiptap h2 {
+          font-size: 1.35rem;
+          font-weight: 600;
+          margin: 0.85rem 0 0.4rem;
+        }
+        .tiptap h3 {
+          font-size: 1.15rem;
+          font-weight: 600;
+          margin: 0.75rem 0 0.35rem;
         }
         .tiptap a {
           color: #F1913D;

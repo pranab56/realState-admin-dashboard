@@ -101,6 +101,13 @@ export default function CreateBlogForm({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
+
+    const currentTotalCount = selectedFiles.length + existingImages.length;
+    if (currentTotalCount + files.length > 5) {
+      toast.error("You can upload a maximum of 5 images");
+      return;
+    }
+
     setSelectedFiles((prev) => [...prev, ...files]);
     setBlobPreviews((prev) => [...prev, ...files.map((f) => URL.createObjectURL(f))]);
     e.target.value = "";
@@ -136,6 +143,11 @@ export default function CreateBlogForm({
 
     // Append each image with the same "image" key (keeping original field name)
     selectedFiles.forEach((file) => payload.append("image", file));
+
+    if (selectedFiles.length + existingImages.length > 5) {
+      toast.error("Total images cannot exceed 5");
+      return;
+    }
 
     try {
       if (isEdit) {
@@ -195,7 +207,7 @@ export default function CreateBlogForm({
                 Featured Images
                 {allPreviews.length > 0 && (
                   <span className="ml-1.5 text-xs font-normal text-gray-400">
-                    ({allPreviews.length} {allPreviews.length === 1 ? "image" : "images"})
+                    ({allPreviews.length} / 5 images)
                   </span>
                 )}
               </Label>
