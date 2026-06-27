@@ -1,6 +1,15 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -9,24 +18,28 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useGetCustomarQuery } from "@/features/customar/customarApi";
+import { Textarea } from "@/components/ui/textarea";
+import { useGetCustomarQuery, useVerificationKycMutation } from "@/features/customar/customarApi";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
 import {
   CalendarCheck,
   ChevronLeft,
   ChevronRight,
-  Eye
+  Eye,
+  Loader2,
+  ShieldCheck
 } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
+import toast from "react-hot-toast";
 import { CustomLoading } from "../../hooks/CustomLoading";
 import { useMarkPageSeen } from "../../hooks/useMarkPageSeen";
 import { useNewItemsTracker } from "../../hooks/useNewItemsTracker";
 import { baseURL } from '../../utils/BaseURL';
 import MarkAllSeenButton from "../notifications/MarkAllSeenButton";
 import NewPulseDot from "../notifications/NewPulseDot";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog';
 
 /* ── Types ─────────────────────────────────────────────────── */
 interface User {
@@ -50,6 +63,7 @@ interface User {
   verification?: {
     status: string;
     documents: string[];
+    reviewNotes?: string;
   };
 }
 
@@ -78,6 +92,11 @@ export default function UserManagement() {
   const [page, setPage] = useState(1);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [isReviewOpen, setIsReviewOpen] = useState(false);
+  const [reviewStatus, setReviewStatus] = useState<"verified" | "rejected">("verified");
+  const [reviewNotes, setReviewNotes] = useState("");
+
+  const [verificationKyc, { isLoading: isReviewing }] = useVerificationKycMutation();
 
   const { data: customerData, isLoading, isError } = useGetCustomarQuery({ page, limit: 10 }, { pollingInterval: 3000 });
   useMarkPageSeen("customer", customerData?.pagination?.total);
@@ -110,6 +129,29 @@ export default function UserManagement() {
     setSelectedUser(user);
     setIsDetailsOpen(true);
     dismiss(user._id);
+  };
+
+  const handleOpenReview = () => {
+    if (!selectedUser?.verification) return;
+    setReviewStatus(selectedUser.verification.status === "rejected" ? "rejected" : "verified");
+    setReviewNotes(selectedUser.verification.reviewNotes || "");
+    setIsReviewOpen(true);
+  };
+
+  const handleSubmitReview = async () => {
+    if (!selectedUser) return;
+    try {
+      await verificationKyc({
+        id: selectedUser._id,
+        data: { status: reviewStatus, reviewNotes },
+      }).unwrap();
+      toast.success("KYC verification updated successfully!");
+      setIsReviewOpen(false);
+      setIsDetailsOpen(false);
+    } catch (error: unknown) {
+      const err = error as { data?: { message?: string } };
+      toast.error(err?.data?.message || "Failed to update KYC verification");
+    }
   };
 
   return (
@@ -437,8 +479,75 @@ export default function UserManagement() {
                   </div>
                 </div>
               )}
+
+              {/* Verify KYC */}
+              <div className="border-t pt-4 flex justify-end">
+                {selectedUser.verification?.status === "verified" ? (
+                  <span className="inline-flex items-center gap-2 text-sm font-semibold text-green-600">
+                    <ShieldCheck className="w-4 h-4" />
+                    Verified
+                  </span>
+                ) : (
+                  <Button
+                    onClick={handleOpenReview}
+                    disabled={!selectedUser.verification}
+                    className="gap-2"
+                    style={{ backgroundColor: "#F1913D", color: "#FFFFFF" }}
+                  >
+                    <ShieldCheck className="w-4 h-4" />
+                    Verify KYC
+                  </Button>
+                )}
+              </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Verify KYC Modal (nested) ── */}
+      <Dialog open={isReviewOpen} onOpenChange={setIsReviewOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">Verify KYC</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-sm font-semibold" style={{ color: "#2C2E33" }}>Status</Label>
+              <Select value={reviewStatus} onValueChange={(v) => setReviewStatus(v as "verified" | "rejected")}>
+                <SelectTrigger className="h-11 w-full rounded-sm py-5 border" style={{ borderColor: "#F2F2F2", backgroundColor: "#FAFAFA" }}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="verified">Verified</SelectItem>
+                  <SelectItem value="rejected">Rejected</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-sm font-semibold" style={{ color: "#2C2E33" }}>Review Notes</Label>
+              <Textarea
+                value={reviewNotes}
+                onChange={(e) => setReviewNotes(e.target.value)}
+                placeholder="Write a note about this review..."
+                className="min-h-24 rounded-sm border"
+                style={{ borderColor: "#F2F2F2", backgroundColor: "#FAFAFA" }}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              onClick={handleSubmitReview}
+              disabled={isReviewing}
+              className="gap-2"
+              style={{ backgroundColor: "#F1913D", color: "#FFFFFF" }}
+            >
+              {isReviewing && <Loader2 className="w-4 h-4 animate-spin" />}
+              {isReviewing ? "Saving..." : "Submit"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

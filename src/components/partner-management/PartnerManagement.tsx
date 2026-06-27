@@ -1,12 +1,22 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -15,6 +25,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
+import { useVerificationKycMutation } from "@/features/customar/customarApi";
 import { useGetPartnerQuery } from "@/features/partner/partnerApi";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
@@ -23,10 +35,13 @@ import {
   ChevronLeft,
   ChevronRight,
   Eye,
-  Plus
+  Loader2,
+  Plus,
+  ShieldCheck
 } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
+import toast from "react-hot-toast";
 import { CustomLoading } from "../../hooks/CustomLoading";
 import { useMarkPageSeen } from "../../hooks/useMarkPageSeen";
 import { useNewItemsTracker } from "../../hooks/useNewItemsTracker";
@@ -56,6 +71,7 @@ interface Partner {
   verification?: {
     status: string;
     documents: string[];
+    reviewNotes?: string;
   };
 }
 
@@ -81,6 +97,11 @@ export default function PartnerManagement() {
   const [page, setPage] = useState(1);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [selectedPartner, setSelectedPartner] = useState<Partner | null>(null);
+  const [isReviewOpen, setIsReviewOpen] = useState(false);
+  const [reviewStatus, setReviewStatus] = useState<"verified" | "rejected">("verified");
+  const [reviewNotes, setReviewNotes] = useState("");
+
+  const [verificationKyc, { isLoading: isReviewing }] = useVerificationKycMutation();
 
   const { data: partnerData, isLoading, isError } = useGetPartnerQuery({ page, limit: 10 }, { pollingInterval: 3000 });
   useMarkPageSeen("partner", partnerData?.pagination?.total);
@@ -113,6 +134,29 @@ export default function PartnerManagement() {
     setSelectedPartner(partner);
     setIsDetailsOpen(true);
     dismiss(partner._id);
+  };
+
+  const handleOpenReview = () => {
+    if (!selectedPartner?.verification) return;
+    setReviewStatus(selectedPartner.verification.status === "rejected" ? "rejected" : "verified");
+    setReviewNotes(selectedPartner.verification.reviewNotes || "");
+    setIsReviewOpen(true);
+  };
+
+  const handleSubmitReview = async () => {
+    if (!selectedPartner) return;
+    try {
+      await verificationKyc({
+        id: selectedPartner._id,
+        data: { status: reviewStatus, reviewNotes },
+      }).unwrap();
+      toast.success("KYC verification updated successfully!");
+      setIsReviewOpen(false);
+      setIsDetailsOpen(false);
+    } catch (error: unknown) {
+      const err = error as { data?: { message?: string } };
+      toast.error(err?.data?.message || "Failed to update KYC verification");
+    }
   };
 
   return (
@@ -436,8 +480,75 @@ export default function PartnerManagement() {
                   </div>
                 </div>
               )}
+
+              {/* Verify KYC */}
+              <div className="border-t pt-4 flex justify-end">
+                {selectedPartner.verification?.status === "verified" ? (
+                  <span className="inline-flex items-center gap-2 text-sm font-semibold text-green-600">
+                    <ShieldCheck className="w-4 h-4" />
+                    Verified
+                  </span>
+                ) : (
+                  <Button
+                    onClick={handleOpenReview}
+                    disabled={!selectedPartner.verification}
+                    className="gap-2"
+                    style={{ backgroundColor: "#F1913D", color: "#FFFFFF" }}
+                  >
+                    <ShieldCheck className="w-4 h-4" />
+                    Verify KYC
+                  </Button>
+                )}
+              </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Verify KYC Modal (nested) ── */}
+      <Dialog open={isReviewOpen} onOpenChange={setIsReviewOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">Verify KYC</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-sm font-semibold" style={{ color: "#2C2E33" }}>Status</Label>
+              <Select value={reviewStatus} onValueChange={(v) => setReviewStatus(v as "verified" | "rejected")}>
+                <SelectTrigger className="h-11 w-full rounded-sm py-5 border" style={{ borderColor: "#F2F2F2", backgroundColor: "#FAFAFA" }}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="verified">Verified</SelectItem>
+                  <SelectItem value="rejected">Rejected</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-sm font-semibold" style={{ color: "#2C2E33" }}>Review Notes</Label>
+              <Textarea
+                value={reviewNotes}
+                onChange={(e) => setReviewNotes(e.target.value)}
+                placeholder="Write a note about this review..."
+                className="min-h-24 rounded-sm border"
+                style={{ borderColor: "#F2F2F2", backgroundColor: "#FAFAFA" }}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              onClick={handleSubmitReview}
+              disabled={isReviewing}
+              className="gap-2"
+              style={{ backgroundColor: "#F1913D", color: "#FFFFFF" }}
+            >
+              {isReviewing && <Loader2 className="w-4 h-4 animate-spin" />}
+              {isReviewing ? "Saving..." : "Submit"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

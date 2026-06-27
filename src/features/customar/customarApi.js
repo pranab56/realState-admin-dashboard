@@ -11,9 +11,19 @@ export const customerApi = baseApi.injectEndpoints({
       }),
       providesTags: ["customar"],
     }),
+
+    verificationKyc: builder.mutation({
+      query: ({ id, data }) => ({
+        url: `/users/kyc/${id}/review`,
+        method: "PATCH",
+        body: data
+      }),
+      invalidatesTags: ["customar", "partner"],
+    }),
   }),
 });
 
 export const {
   useGetCustomarQuery,
+  useVerificationKycMutation,
 } = customerApi;
