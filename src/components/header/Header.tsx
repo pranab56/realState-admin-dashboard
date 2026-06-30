@@ -12,6 +12,8 @@ import {
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { NEW_DATA_ENTITIES } from "@/config/newDataEntities";
 import { clearUnseenCount } from "@/features/notifications/newDataSlice";
+import { useGetMyProfileQuery } from "@/features/profile/profileApi";
+import { baseURL } from "@/utils/BaseURL";
 import { Bell } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
@@ -28,13 +30,22 @@ const PAGE_META: Record<string, { title: string; sub: string }> = {
   "/profile": { title: "Account Settings", sub: "Manage your personal details, preferences, and account security." },
 };
 
-const USER_AVATAR = "https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?w=48&h=48&fit=crop&auto=format";
-
 export default function MyNavber() {
   const pathname = usePathname();
   const router = useRouter();
   const dispatch = useDispatch();
   const meta = PAGE_META[pathname] || { title: "Admin Panel", sub: "Welcome to your admin dashboard." };
+
+  const { data: profileData, isLoading: isProfileLoading } = useGetMyProfileQuery({});
+  const user = profileData?.data;
+  const fullName = user ? `${user.firstName || ""} ${user.lastName || ""}`.trim() : "";
+  const role = user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : "";
+  const initials = fullName
+    ? fullName.split(" ").map((n: string) => n[0]).slice(0, 2).join("").toUpperCase()
+    : "AD";
+  const avatarSrc = user?.image
+    ? user.image.startsWith("http") ? user.image : `${baseURL}${user.image}`
+    : "";
 
   const unseen = useSelector((state: { newData: { unseen: Record<string, number> } }) => state.newData.unseen);
   const newEntities = NEW_DATA_ENTITIES.filter((e) => (unseen[e.key] || 0) > 0);
@@ -110,23 +121,35 @@ export default function MyNavber() {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <button
-          onClick={() => router.push("/profile")}
-          className="flex items-center gap-3 cursor-pointer group"
-        >
-          <div className="text-right hidden sm:block">
-            <p className="text-sm font-bold leading-none mb-1 group-hover:text-[#F1913D] transition-colors" style={{ color: "#2C2E33" }}>
-              Rasel Parvez
-            </p>
-            <p className="text-xs font-semibold" style={{ color: "#6C757D" }}>
-              Admin
-            </p>
+        {isProfileLoading ? (
+          <div className="flex items-center gap-3">
+            <div className="text-right hidden sm:block space-y-1.5">
+              <div className="h-3.5 w-24 rounded-md animate-pulse" style={{ backgroundColor: "#F2F2F2" }} />
+              <div className="h-2.5 w-14 rounded-md animate-pulse ml-auto" style={{ backgroundColor: "#F2F2F2" }} />
+            </div>
+            <div className="h-11 w-11 rounded-xl animate-pulse shrink-0" style={{ backgroundColor: "#F2F2F2" }} />
           </div>
-          <Avatar className="h-11 w-11 rounded-xl border-0 transition-all">
-            <AvatarImage src={USER_AVATAR} alt="Rasel Parvez" className="object-cover" />
-            <AvatarFallback className="rounded-xl bg-[#F1913D] text-white">RP</AvatarFallback>
-          </Avatar>
-        </button>
+        ) : (
+          <button
+            onClick={() => router.push("/profile")}
+            className="flex items-center gap-3 cursor-pointer group"
+          >
+            <div className="text-right hidden sm:block">
+              <p className="text-sm font-bold leading-none mb-1 group-hover:text-[#F1913D] transition-colors" style={{ color: "#2C2E33" }}>
+                {fullName || "Admin"}
+              </p>
+              <p className="text-xs font-semibold capitalize" style={{ color: "#6C757D" }}>
+                {role || "Admin"}
+              </p>
+            </div>
+            <Avatar className="h-11 w-11 rounded-xl border-0 transition-all">
+              <AvatarImage src={avatarSrc} alt={fullName} className="object-cover" />
+              <AvatarFallback className="rounded-xl bg-[#F1913D] text-white text-sm font-bold">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+          </button>
+        )}
       </div>
     </header>
   )

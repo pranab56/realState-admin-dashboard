@@ -23,7 +23,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useGetManageListingQuery } from "@/features/manageProperty/managePropertyApi";
+import {
+  useDeletePropertyMutation,
+  useGetManageListingQuery,
+} from "@/features/manageProperty/managePropertyApi";
 import { useMarkPageSeen } from "@/hooks/useMarkPageSeen";
 import { useNewItemsTracker } from "@/hooks/useNewItemsTracker";
 import MarkAllSeenButton from "@/components/notifications/MarkAllSeenButton";
@@ -33,22 +36,25 @@ import {
   BadgeCheck,
   Bath,
   BedDouble,
-  CalendarDays,
   Car,
   ChevronLeft,
   ChevronRight,
   Eye,
+  Loader2,
   MapPin,
-  Maximize2,
+  Pencil,
   Plus,
   Ruler,
   Star,
+  Trash2,
   XCircle,
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { toast } from "react-hot-toast";
 import { CustomLoading } from "../../hooks/CustomLoading";
+import AddPropertyForm, { PropertyInitialData } from "./AddPropertyForm";
 
 /* ─────────────────────────── helpers ─────────────────────────── */
 function imgUrl(path: string) {
@@ -128,6 +134,14 @@ interface Property {
 }
 
 /* ─────────────────────────── Detail Modal ─────────────────────── */
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "#F1913D" }}>
+      {children}
+    </p>
+  );
+}
+
 function PropertyDetailModal({ prop, open, onClose }: { prop: Property | null; open: boolean; onClose: () => void }) {
   const [activeImg, setActiveImg] = useState(0);
 
@@ -136,177 +150,220 @@ function PropertyDetailModal({ prop, open, onClose }: { prop: Property | null; o
   const images: string[] = prop.images || [];
   const listing = prop.listing || {};
 
+  const prevImg = () => setActiveImg((i) => (i - 1 + images.length) % images.length);
+  const nextImg = () => setActiveImg((i) => (i + 1) % images.length);
+
   return (
-    <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-0 gap-0">
+    <Dialog open={open} onOpenChange={(v) => { if (!v) { onClose(); setActiveImg(0); } }}>
+      <DialogContent className="max-w-3xl max-h-[90vh] border border-red-500 overflow-y-auto p-0 gap-0 rounded-2xl">
 
-        {/* Header strip */}
-        <div className="px-6 pt-5 pb-4 border-b" style={{ borderColor: "#F2F2F2" }}>
-          <DialogHeader>
-            <div className="flex items-start justify-between gap-3 flex-wrap">
-              <div>
-                <DialogTitle className="text-base font-bold leading-snug" style={{ color: "#2C2E33" }}>
-                  {prop.title}
-                </DialogTitle>
-                {prop.uid && (
-                  <p className="text-xs mt-0.5" style={{ color: "#6C757D" }}>ID: {prop.uid}</p>
-                )}
-              </div>
-              <div className="flex flex-wrap gap-2 items-center">
-                <span className="px-2.5 py-1 rounded-lg text-xs font-semibold capitalize"
-                  style={{ backgroundColor: "#F2F2F2", color: "#2C2E33" }}>
-                  {prop.structureType?.replace(/_/g, " ")}
-                </span>
-                <PurposeBadge purpose={listing.purpose} />
-                <StatusBadge status={prop.status} />
-                {prop.isVerified && (
-                  <span className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold"
-                    style={{ backgroundColor: "#E8F5E9", color: "#2B9724" }}>
-                    <BadgeCheck className="w-3.5 h-3.5" /> Verified
-                  </span>
-                )}
-                {prop.isFeatured && (
-                  <span className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold"
-                    style={{ backgroundColor: "#FFF7ED", color: "#EA580C" }}>
-                    <Star className="w-3 h-3 fill-current" /> Featured
-                  </span>
-                )}
-              </div>
-            </div>
-          </DialogHeader>
-        </div>
+        {/* ── Image Gallery ── */}
+        {images.length > 0 ? (
+          <div className="relative w-full bg-gray-900 overflow-hidden rounded-t-2xl" style={{ height: "400px" }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={imgUrl(images[activeImg])}
+              alt="property"
+              className="w-full h-full object-contain transition-opacity duration-200"
+            />
+            {/* dark gradient overlay at bottom */}
+            <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/70 to-transparent" />
 
-        <div className="p-6 space-y-6">
+            {/* nav arrows */}
+            {images.length > 1 && (
+              <>
+                <button type="button" onClick={prevImg}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center transition-colors">
+                  <ChevronLeft className="w-4 h-4 text-white" />
+                </button>
+                <button type="button" onClick={nextImg}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center transition-colors">
+                  <ChevronRight className="w-4 h-4 text-white" />
+                </button>
+              </>
+            )}
 
-          {/* Image gallery */}
-          {images.length > 0 && (
-            <div className="space-y-2">
-              <div className="relative w-full rounded-xl overflow-hidden bg-gray-100"
-                style={{ aspectRatio: "16/7" }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={imgUrl(images[activeImg])} alt="main"
-                  className="w-full h-full object-cover" />
-                {images.length > 1 && (
-                  <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded-full text-xs font-semibold bg-black/60 text-white">
-                    {activeImg + 1} / {images.length}
-                  </div>
-                )}
-              </div>
-              {images.length > 1 && (
-                <div className="flex gap-2 overflow-x-auto pb-1">
-                  {images.map((src, i) => (
-                    <button key={i} type="button" onClick={() => setActiveImg(i)}
-                      className="shrink-0 w-16 h-11 rounded-lg overflow-hidden border-2 transition-all"
-                      style={{ borderColor: i === activeImg ? "#F1913D" : "transparent" }}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={imgUrl(src)} alt={`thumb-${i}`} className="w-full h-full object-cover" />
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Price + rating row */}
-          <div className="flex flex-wrap items-center gap-4">
-            <div>
-              <p className="text-xl font-bold" style={{ color: "#F1913D" }}>
-                {prop.price?.toLocaleString()} {prop.currency}
-              </p>
-              <p className="text-xs" style={{ color: "#6C757D" }}>
-                {listing.purpose === "for_rent" ? "per month" : "sale price"}
-              </p>
-            </div>
-            {(prop.ratingCount && prop.ratingCount > 0) && (
-              <div className="flex items-center gap-1.5 ml-auto">
-                <Star className="w-4 h-4 fill-[#F1913D] text-[#F1913D]" />
-                <span className="text-sm font-bold" style={{ color: "#2C2E33" }}>{prop.averageRating}</span>
-                <span className="text-xs" style={{ color: "#6C757D" }}>({prop.ratingCount} reviews)</span>
+            {/* counter */}
+            {images.length > 1 && (
+              <div className="absolute bottom-3 right-3 px-2.5 py-1 rounded-full text-xs font-semibold bg-black/60 text-white">
+                {activeImg + 1} / {images.length}
               </div>
             )}
+
+            {/* title overlay */}
+            <div className="absolute bottom-15 left-4 right-16">
+              <p className="text-white font-bold text-lg leading-tight line-clamp-1">{prop.title}</p>
+              <div className="flex items-center gap-2 mt-1 flex-wrap">
+                {prop.uid && <span className="text-white/70 text-xs">{prop.uid}</span>}
+                <span className="text-white/70 text-xs">•</span>
+                <span className="text-white/90 text-xs capitalize">{prop.structureType?.replace(/_/g, " ")}</span>
+              </div>
+            </div>
+
+            {/* thumbnail strip */}
+            {images.length > 1 && (
+              <div className="absolute bottom-0 left-0 right-0 flex gap-1.5 px-4 pb-2 pt-8 overflow-x-auto"
+                style={{ background: "none" }}>
+                {images.map((src, i) => (
+                  <button key={i} type="button" onClick={() => setActiveImg(i)}
+                    className="shrink-0 w-12 h-8 rounded overflow-hidden border-2 transition-all"
+                    style={{ borderColor: i === activeImg ? "#F1913D" : "rgba(255,255,255,0.3)" }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={imgUrl(src)} alt="" className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="w-full h-32 rounded-t-2xl flex items-center justify-center bg-gray-100">
+            <p className="text-sm" style={{ color: "#6C757D" }}>No images available</p>
+          </div>
+        )}
+
+        {/* ── Content ── */}
+        <div className="p-6 space-y-6">
+
+          {/* Header row: badges + price */}
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div className="flex flex-wrap gap-2">
+              <PurposeBadge purpose={listing.purpose} />
+              <StatusBadge status={prop.status} />
+              {prop.isVerified && (
+                <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold"
+                  style={{ backgroundColor: "#E8F5E9", color: "#2B9724" }}>
+                  <BadgeCheck className="w-3 h-3" /> Verified
+                </span>
+              )}
+              {prop.isFeatured && (
+                <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold"
+                  style={{ backgroundColor: "#FFF7ED", color: "#EA580C" }}>
+                  <Star className="w-3 h-3 fill-current" /> Featured
+                </span>
+              )}
+            </div>
+            <div className="text-right">
+              <p className="text-2xl font-bold" style={{ color: "#F1913D" }}>
+                {prop.price?.toLocaleString()} <span className="text-base">{prop.currency}</span>
+              </p>
+              <p className="text-xs mt-0.5" style={{ color: "#6C757D" }}>
+                {listing.purpose === "for_rent" ? "/ month" : "sale price"}
+              </p>
+            </div>
           </div>
 
           {/* Description */}
           {prop.description && (
-            <p className="text-sm leading-relaxed" style={{ color: "#6C757D" }}>{prop.description}</p>
+            <div className="rounded-xl p-4" style={{ backgroundColor: "#FAFAFA", border: "1px solid #F2F2F2" }}>
+              <SectionLabel>Description</SectionLabel>
+              <p className="text-sm leading-relaxed" style={{ color: "#6C757D" }}>{prop.description}</p>
+            </div>
           )}
 
-          {/* Feature cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {[
-              { icon: BedDouble, label: "Bedrooms", value: listing.bedrooms ?? "—" },
-              { icon: Bath, label: "Bathrooms", value: listing.bathrooms ?? "—" },
-              { icon: Car, label: "Garage", value: listing.garage ?? "—" },
-              { icon: Ruler, label: "Total Area", value: listing.totalArea ? `${listing.totalArea.toLocaleString()} sqft` : "—" },
-            ].map(({ icon: Icon, label, value }) => (
-              <div key={label} className="flex flex-col items-center justify-center gap-1.5 rounded-xl p-3 text-center"
-                style={{ backgroundColor: "#FAFAFA", border: "1px solid #F2F2F2" }}>
-                <Icon className="w-4 h-4" style={{ color: "#F1913D" }} />
-                <p className="text-base font-bold" style={{ color: "#2C2E33" }}>{value}</p>
-                <p className="text-[11px]" style={{ color: "#6C757D" }}>{label}</p>
-              </div>
-            ))}
+          {/* Property Features */}
+          <div>
+            <SectionLabel>Property Features</SectionLabel>
+            <div className="grid grid-cols-4 gap-3">
+              {[
+                { icon: BedDouble, label: "Bedrooms", value: listing.bedrooms ?? "—" },
+                { icon: Bath, label: "Bathrooms", value: listing.bathrooms ?? "—" },
+                { icon: Car, label: "Garage", value: listing.garage ?? "—" },
+                { icon: Ruler, label: "Total Area", value: listing.totalArea ? `${listing.totalArea.toLocaleString()}` : "—", unit: "sqft" },
+              ].map(({ icon: Icon, label, value, unit }) => (
+                <div key={label}
+                  className="flex flex-col items-center justify-center gap-1.5 rounded-xl p-3 text-center"
+                  style={{ backgroundColor: "#FAFAFA", border: "1px solid #F2F2F2" }}>
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center"
+                    style={{ backgroundColor: "#FEF0E4" }}>
+                    <Icon className="w-4 h-4" style={{ color: "#F1913D" }} />
+                  </div>
+                  <p className="text-base font-bold leading-tight" style={{ color: "#2C2E33" }}>{value}</p>
+                  {unit && <p className="text-[10px]" style={{ color: "#F1913D" }}>{unit}</p>}
+                  <p className="text-[11px]" style={{ color: "#6C757D" }}>{label}</p>
+                </div>
+              ))}
+            </div>
           </div>
 
-          {/* Extra listing info */}
-          {(listing.landArea || listing.yearBuilt || listing.availableFrom) && (
-            <div className="grid grid-cols-3 gap-3">
-              {listing.landArea && (
-                <div className="rounded-xl p-3" style={{ backgroundColor: "#FAFAFA", border: "1px solid #F2F2F2" }}>
-                  <p className="text-[11px]" style={{ color: "#6C757D" }}>Land Area</p>
-                  <p className="text-sm font-semibold mt-0.5" style={{ color: "#2C2E33" }}>{listing.landArea.toLocaleString()} sqft</p>
-                </div>
-              )}
-              {listing.yearBuilt && (
-                <div className="rounded-xl p-3" style={{ backgroundColor: "#FAFAFA", border: "1px solid #F2F2F2" }}>
-                  <p className="text-[11px]" style={{ color: "#6C757D" }}>Year Built</p>
-                  <p className="text-sm font-semibold mt-0.5" style={{ color: "#2C2E33" }}>{listing.yearBuilt}</p>
-                </div>
-              )}
-              {listing.availableFrom && (
-                <div className="rounded-xl p-3 flex items-start gap-2" style={{ backgroundColor: "#FAFAFA", border: "1px solid #F2F2F2" }}>
-                  <CalendarDays className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: "#F1913D" }} />
-                  <div>
+          {/* Extra details */}
+          {(listing.landArea || listing.yearBuilt || listing.availableFrom || (prop.ratingCount && prop.ratingCount > 0)) && (
+            <div>
+              <SectionLabel>Additional Info</SectionLabel>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {listing.landArea ? (
+                  <div className="rounded-xl p-3" style={{ backgroundColor: "#FAFAFA", border: "1px solid #F2F2F2" }}>
+                    <p className="text-[11px]" style={{ color: "#6C757D" }}>Land Area</p>
+                    <p className="text-sm font-semibold mt-0.5" style={{ color: "#2C2E33" }}>{listing.landArea.toLocaleString()} sqft</p>
+                  </div>
+                ) : null}
+                {listing.yearBuilt ? (
+                  <div className="rounded-xl p-3" style={{ backgroundColor: "#FAFAFA", border: "1px solid #F2F2F2" }}>
+                    <p className="text-[11px]" style={{ color: "#6C757D" }}>Year Built</p>
+                    <p className="text-sm font-semibold mt-0.5" style={{ color: "#2C2E33" }}>{listing.yearBuilt}</p>
+                  </div>
+                ) : null}
+                {listing.availableFrom ? (
+                  <div className="rounded-xl p-3" style={{ backgroundColor: "#FAFAFA", border: "1px solid #F2F2F2" }}>
                     <p className="text-[11px]" style={{ color: "#6C757D" }}>Available From</p>
                     <p className="text-sm font-semibold mt-0.5" style={{ color: "#2C2E33" }}>
                       {new Date(listing.availableFrom).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
                     </p>
                   </div>
-                </div>
-              )}
+                ) : null}
+                {(prop.ratingCount && prop.ratingCount > 0) ? (
+                  <div className="rounded-xl p-3 flex items-center gap-2" style={{ backgroundColor: "#FAFAFA", border: "1px solid #F2F2F2" }}>
+                    <Star className="w-4 h-4 shrink-0 fill-[#F1913D] text-[#F1913D]" />
+                    <div>
+                      <p className="text-sm font-bold" style={{ color: "#2C2E33" }}>{prop.averageRating}</p>
+                      <p className="text-[11px]" style={{ color: "#6C757D" }}>{prop.ratingCount} reviews</p>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
             </div>
           )}
 
           {/* Address */}
-          <div className="rounded-xl p-4 space-y-2" style={{ backgroundColor: "#FAFAFA", border: "1px solid #F2F2F2" }}>
-            <div className="flex items-center gap-2 mb-1">
-              <MapPin className="w-4 h-4" style={{ color: "#F1913D" }} />
-              <p className="text-sm font-semibold" style={{ color: "#2C2E33" }}>Address</p>
-            </div>
-            <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
-              {[
-                { label: "Street", value: prop.address?.street },
-                { label: "City", value: prop.address?.city },
-                { label: "State", value: prop.address?.state },
-                { label: "Postal Code", value: prop.address?.postalCode },
-                { label: "Country", value: prop.address?.country },
-              ].filter((r) => r.value).map(({ label, value }) => (
-                <div key={label}>
-                  <span className="text-xs" style={{ color: "#6C757D" }}>{label}: </span>
-                  <span className="font-medium" style={{ color: "#2C2E33" }}>{value}</span>
-                </div>
-              ))}
+          <div>
+            <SectionLabel>Location</SectionLabel>
+            <div className="rounded-xl p-4" style={{ backgroundColor: "#FAFAFA", border: "1px solid #F2F2F2" }}>
+              <div className="flex items-center gap-2 mb-3">
+                <MapPin className="w-4 h-4 shrink-0" style={{ color: "#F1913D" }} />
+                <p className="text-sm font-semibold" style={{ color: "#2C2E33" }}>
+                  {[prop.address?.city, prop.address?.country].filter(Boolean).join(", ")}
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+                {[
+                  { label: "Street", value: prop.address?.street },
+                  { label: "City", value: prop.address?.city },
+                  { label: "State", value: prop.address?.state },
+                  { label: "Postal Code", value: prop.address?.postalCode },
+                  { label: "Country", value: prop.address?.country },
+                  prop.location?.coordinates?.length === 2
+                    ? { label: "Coordinates", value: `${prop.location.coordinates[1].toFixed(4)}, ${prop.location.coordinates[0].toFixed(4)}` }
+                    : null,
+                ].filter((r): r is { label: string; value: string } => !!r && !!r.value).map(({ label, value }) => (
+                  <div key={label} className="flex flex-col gap-0.5">
+                    <span className="text-[11px] font-medium uppercase tracking-wide" style={{ color: "#6C757D" }}>{label}</span>
+                    <span className="text-sm font-semibold" style={{ color: "#2C2E33" }}>{value}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 
           {/* Amenities */}
           {prop.amenities && prop.amenities.length > 0 && (
             <div>
-              <p className="text-sm font-semibold mb-2" style={{ color: "#2C2E33" }}>Amenities</p>
+              <SectionLabel>Amenities</SectionLabel>
               <div className="flex flex-wrap gap-2">
                 {prop.amenities.map((a: string) => (
-                  <span key={a} className="px-3 py-1 rounded-full text-xs font-medium"
-                    style={{ backgroundColor: "#FEF0E4", color: "#F1913D" }}>{a}</span>
+                  <span key={a}
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold"
+                    style={{ backgroundColor: "#FEF0E4", color: "#F1913D", border: "1px solid #FDDBB4" }}>
+                    {a}
+                  </span>
                 ))}
               </div>
             </div>
@@ -315,14 +372,21 @@ function PropertyDetailModal({ prop, open, onClose }: { prop: Property | null; o
           {/* Landmarks */}
           {listing.landmarks && listing.landmarks.length > 0 && (
             <div>
-              <p className="text-sm font-semibold mb-2" style={{ color: "#2C2E33" }}>Nearby Landmarks</p>
+              <SectionLabel>Nearby Landmarks</SectionLabel>
               <div className="grid grid-cols-2 gap-2">
-                {listing.landmarks.map((lm: { _id: string; name: string; distanceInKm: number }) => (
-                  <div key={lm._id} className="flex items-center gap-2 rounded-lg px-3 py-2"
+                {listing.landmarks.map((lm) => (
+                  <div key={lm._id}
+                    className="flex items-center gap-2.5 rounded-xl px-3 py-2.5"
                     style={{ backgroundColor: "#FAFAFA", border: "1px solid #F2F2F2" }}>
-                    <MapPin className="w-3.5 h-3.5 shrink-0" style={{ color: "#F1913D" }} />
-                    <span className="text-sm flex-1" style={{ color: "#2C2E33" }}>{lm.name}</span>
-                    <span className="text-xs font-medium" style={{ color: "#6C757D" }}>{lm.distanceInKm} km</span>
+                    <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
+                      style={{ backgroundColor: "#FEF0E4" }}>
+                      <MapPin className="w-3 h-3" style={{ color: "#F1913D" }} />
+                    </div>
+                    <span className="text-sm flex-1 font-medium" style={{ color: "#2C2E33" }}>{lm.name}</span>
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full"
+                      style={{ backgroundColor: "#F2F2F2", color: "#6C757D" }}>
+                      {lm.distanceInKm} km
+                    </span>
                   </div>
                 ))}
               </div>
@@ -332,25 +396,106 @@ function PropertyDetailModal({ prop, open, onClose }: { prop: Property | null; o
           {/* Video */}
           {prop.videoUrl && (
             <div>
-              <p className="text-sm font-semibold mb-2" style={{ color: "#2C2E33" }}>Property Video</p>
+              <SectionLabel>Property Video</SectionLabel>
               <video
                 src={imgUrl(prop.videoUrl)}
                 controls
-                className="w-full rounded-xl object-cover"
+                className="w-full rounded-xl"
                 style={{ maxHeight: "260px", backgroundColor: "#000" }}
               />
             </div>
           )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
-          {/* Location coordinates */}
-          {prop.location?.coordinates?.length === 2 && (
-            <div className="flex items-center gap-2 text-xs" style={{ color: "#6C757D" }}>
-              <Maximize2 className="w-3.5 h-3.5 shrink-0" />
-              <span>
-                Coordinates: {prop.location.coordinates[1].toFixed(5)}, {prop.location.coordinates[0].toFixed(5)}
-              </span>
-            </div>
-          )}
+/* ─────────────────────────── Edit Modal ───────────────────────── */
+function EditPropertyModal({ prop, open, onClose }: { prop: Property | null; open: boolean; onClose: () => void }) {
+  if (!prop) return null;
+
+  const initialData: PropertyInitialData = {
+    title: prop.title,
+    description: prop.description,
+    structureType: prop.structureType,
+    price: prop.price,
+    currency: prop.currency,
+    listing: prop.listing,
+    address: prop.address,
+    location: prop.location,
+    amenities: prop.amenities,
+    images: prop.images,
+    videoUrl: prop.videoUrl,
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
+      <DialogContent className="max-w-3xl p-0 gap-0" style={{ height: "90vh" }}>
+        <div className="px-6 pt-5 pb-4 border-b shrink-0" style={{ borderColor: "#F2F2F2" }}>
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold" style={{ color: "#2C2E33" }}>
+              Edit Listing
+            </DialogTitle>
+            <p className="text-xs mt-0.5" style={{ color: "#6C757D" }}>{prop.title}</p>
+          </DialogHeader>
+        </div>
+        <div className="flex-1 overflow-hidden px-6 pb-6 pt-4 flex flex-col min-h-0">
+          <AddPropertyForm
+            initialData={initialData}
+            propertyId={prop._id}
+            onCancel={onClose}
+          />
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/* ─────────────────────────── Delete Confirm Modal ─────────────── */
+function DeleteConfirmModal({
+  propTitle,
+  open,
+  isDeleting,
+  onConfirm,
+  onClose,
+}: {
+  propTitle: string;
+  open: boolean;
+  isDeleting: boolean;
+  onConfirm: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
+      <DialogContent className="sm:max-w-xl p-6 gap-0">
+        <DialogHeader>
+          <DialogTitle className="text-base font-bold" style={{ color: "#2C2E33" }}>
+            Delete Listing
+          </DialogTitle>
+        </DialogHeader>
+        <div className="mt-4 space-y-4">
+          <div className="flex items-center justify-center w-14 h-14 rounded-full mx-auto"
+            style={{ backgroundColor: "#FEE2E2" }}>
+            <Trash2 className="w-6 h-6 text-red-500" />
+          </div>
+          <p className="text-sm text-center" style={{ color: "#6C757D" }}>
+            Are you sure you want to delete{" "}
+            <span className="font-semibold" style={{ color: "#2C2E33" }}>&quot;{propTitle}&quot;</span>?
+            <br />This action cannot be undone.
+          </p>
+          <div className="flex gap-3 pt-2">
+            <Button variant="outline" onClick={onClose} disabled={isDeleting}
+              className="flex-1 h-10 rounded-lg text-sm font-semibold border cursor-pointer"
+              style={{ borderColor: "#F2F2F2", color: "#2C2E33" }}>
+              Cancel
+            </Button>
+            <Button onClick={onConfirm} disabled={isDeleting}
+              className="flex-1 h-10 rounded-lg text-sm font-semibold cursor-pointer flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white">
+              {isDeleting && <Loader2 className="w-4 h-4 animate-spin" />}
+              {isDeleting ? "Deleting..." : "Delete"}
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
@@ -365,7 +510,12 @@ export default function PropertyListing() {
   const [status, setStatus] = useState("");
   const [isVerified, setIsVerified] = useState("");
   const [listingPurpose, setListingPurpose] = useState("");
+
   const [selectedProp, setSelectedProp] = useState<Property | null>(null);
+  const [editProp, setEditProp] = useState<Property | null>(null);
+  const [deleteProp, setDeleteProp] = useState<Property | null>(null);
+
+  const [deleteProperty, { isLoading: isDeleting }] = useDeletePropertyMutation();
 
   const params: Record<string, string | number> = { page, limit: 10 };
   if (structureType) params.structureType = structureType;
@@ -397,6 +547,18 @@ export default function PropertyListing() {
     setPage(1);
   };
 
+  const handleDelete = async () => {
+    if (!deleteProp) return;
+    try {
+      await deleteProperty(deleteProp._id).unwrap();
+      toast.success("Listing deleted successfully!");
+      setDeleteProp(null);
+    } catch (error: unknown) {
+      const err = error as { data?: { message?: string } };
+      toast.error(err?.data?.message || "Failed to delete listing");
+    }
+  };
+
   return (
     <div className="space-y-6">
 
@@ -405,6 +567,22 @@ export default function PropertyListing() {
         prop={selectedProp}
         open={!!selectedProp}
         onClose={() => setSelectedProp(null)}
+      />
+
+      {/* Edit modal */}
+      <EditPropertyModal
+        prop={editProp}
+        open={!!editProp}
+        onClose={() => setEditProp(null)}
+      />
+
+      {/* Delete confirm modal */}
+      <DeleteConfirmModal
+        propTitle={deleteProp?.title ?? ""}
+        open={!!deleteProp}
+        isDeleting={isDeleting}
+        onConfirm={handleDelete}
+        onClose={() => setDeleteProp(null)}
       />
 
       {/* Filters */}
@@ -521,8 +699,7 @@ export default function PropertyListing() {
                         {isNew(prop._id) && <NewPulseDot />}
                         <div className="relative w-14 h-10 rounded-lg overflow-hidden shrink-0 bg-gray-100">
                           {prop.images?.[0] ? (
-                            <Image src={imgUrl(prop.images[0])} alt={prop.title} fill className="object-cover"
-                              unoptimized />
+                            <Image src={imgUrl(prop.images[0])} alt={prop.title} fill className="object-cover" unoptimized />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-400">No Image</div>
                           )}
@@ -581,16 +758,41 @@ export default function PropertyListing() {
                     </TableCell>
 
                     {/* Action */}
-                    <TableCell className="text-center">
-                      <button
-                        type="button"
-                        onClick={() => { setSelectedProp(prop); dismiss(prop._id); }}
-                        className="inline-flex items-center justify-center w-8 h-8 rounded-lg border transition-colors hover:bg-orange-50 cursor-pointer"
-                        style={{ borderColor: "#F2F2F2" }}
-                        title="View Details"
-                      >
-                        <Eye className="w-4 h-4" style={{ color: "#F1913D" }} />
-                      </button>
+                    <TableCell>
+                      <div className="flex items-center justify-center gap-1.5">
+                        {/* View */}
+                        <button
+                          type="button"
+                          onClick={() => { setSelectedProp(prop); dismiss(prop._id); }}
+                          className="inline-flex items-center justify-center w-8 h-8 rounded-lg border transition-colors hover:bg-orange-50 cursor-pointer"
+                          style={{ borderColor: "#F2F2F2" }}
+                          title="View Details"
+                        >
+                          <Eye className="w-4 h-4" style={{ color: "#F1913D" }} />
+                        </button>
+
+                        {/* Edit */}
+                        <button
+                          type="button"
+                          onClick={() => setEditProp(prop)}
+                          className="inline-flex items-center justify-center w-8 h-8 rounded-lg border transition-colors hover:bg-blue-50 cursor-pointer"
+                          style={{ borderColor: "#F2F2F2" }}
+                          title="Edit Listing"
+                        >
+                          <Pencil className="w-4 h-4 text-blue-500" />
+                        </button>
+
+                        {/* Delete */}
+                        <button
+                          type="button"
+                          onClick={() => setDeleteProp(prop)}
+                          className="inline-flex items-center justify-center w-8 h-8 rounded-lg border transition-colors hover:bg-red-50 cursor-pointer"
+                          style={{ borderColor: "#F2F2F2" }}
+                          title="Delete Listing"
+                        >
+                          <Trash2 className="w-4 h-4 text-red-400" />
+                        </button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))

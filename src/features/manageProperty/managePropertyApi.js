@@ -13,6 +13,16 @@ export const managePropertyApi = baseApi.injectEndpoints({
       invalidatesTags: ["property"],
     }),
 
+    updateManageProperty: builder.mutation({
+      query: ({ propertyId, formData }) => ({
+        url: `/properties/listing/${propertyId}`,
+        method: "PATCH",
+        body: formData,
+      }),
+      invalidatesTags: ["property"],
+    }),
+
+
     getManageListing: builder.query({
       query: (params) => ({
         url: `/properties?category=listing`,
@@ -31,12 +41,32 @@ export const managePropertyApi = baseApi.injectEndpoints({
       providesTags: ["property"],
     }),
 
+    deleteProperty: builder.mutation({
+      query: (propertyId) => ({
+        url: `/properties/${propertyId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["property"],
+    }),
+
+    updateStatus: builder.mutation({
+      query: ({ propertyId, data }) => ({
+        url: `/properties/${propertyId}`,
+        method: "PATCH",
+        body: data,
+      }),
+      invalidatesTags: ["property"],
+    }),
+
   }),
 });
 
 // Export hooks
 export const {
   useCreateManagePropertyMutation,
+  useUpdateManagePropertyMutation,
   useGetManageListingQuery,
   useGetManageHotelsQuery,
+  useDeletePropertyMutation,
+  useUpdateStatusMutation
 } = managePropertyApi;

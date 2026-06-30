@@ -19,7 +19,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
-import { useGetCustomarQuery, useVerificationKycMutation } from "@/features/customar/customarApi";
+import { useGetCustomarQuery, useUpdateStatusMutation, useVerificationKycMutation } from "@/features/customar/customarApi";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
 import {
@@ -40,6 +40,7 @@ import { baseURL } from '../../utils/BaseURL';
 import MarkAllSeenButton from "../notifications/MarkAllSeenButton";
 import NewPulseDot from "../notifications/NewPulseDot";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog';
+import { Switch } from '../ui/switch';
 
 /* ── Types ─────────────────────────────────────────────────── */
 interface User {
@@ -92,11 +93,13 @@ export default function UserManagement() {
   const [page, setPage] = useState(1);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [localStatus, setLocalStatus] = useState("active");
   const [isReviewOpen, setIsReviewOpen] = useState(false);
   const [reviewStatus, setReviewStatus] = useState<"verified" | "rejected">("verified");
   const [reviewNotes, setReviewNotes] = useState("");
 
   const [verificationKyc, { isLoading: isReviewing }] = useVerificationKycMutation();
+  const [updateStatus, { isLoading: isStatusUpdating }] = useUpdateStatusMutation();
 
   const { data: customerData, isLoading, isError } = useGetCustomarQuery({ page, limit: 10 }, { pollingInterval: 3000 });
   useMarkPageSeen("customer", customerData?.pagination?.total);
@@ -127,8 +130,23 @@ export default function UserManagement() {
 
   const handleViewDetails = (user: User) => {
     setSelectedUser(user);
+    setLocalStatus(user.status);
     setIsDetailsOpen(true);
     dismiss(user._id);
+  };
+
+  const handleStatusToggle = async (checked: boolean) => {
+    if (!selectedUser) return;
+    const newStatus = checked ? "active" : "inactive";
+    setLocalStatus(newStatus);
+    try {
+      await updateStatus({ userId: selectedUser._id, data: { status: newStatus } }).unwrap();
+      toast.success(`User ${checked ? "activated" : "deactivated"} successfully!`);
+    } catch (err: unknown) {
+      const e = err as { data?: { message?: string } };
+      toast.error(e?.data?.message || "Failed to update status");
+      setLocalStatus(checked ? "inactive" : "active");
+    }
   };
 
   const handleOpenReview = () => {
@@ -418,14 +436,19 @@ export default function UserManagement() {
                     <p className="text-sm font-semibold text-gray-900 mb-2">Verification Status</p>
                     <div className="space-y-2">
                       <div className="flex justify-between border-b pb-1">
-                        <span className="text-sm text-gray-500">Verified</span>
+                        <span className="text-sm text-gray-500">Email Verified</span>
                         <span className={`text-sm font-medium ${selectedUser.isVerified ? 'text-green-600' : 'text-red-500'}`}>
                           {selectedUser.isVerified ? 'Yes' : 'No'}
                         </span>
                       </div>
                       <div className="flex justify-between border-b pb-1">
-                        <span className="text-sm text-gray-500">Doc Status</span>
-                        <span className="text-sm font-medium capitalize">
+                        <span className="text-sm text-gray-500">KYC Verification</span>
+                        <span
+                          className={`text-sm font-medium capitalize ${selectedUser.verification?.status?.toLowerCase() === "verified"
+                            ? "text-green-600"
+                            : ""
+                            }`}
+                        >
                           {selectedUser.verification?.status || "N/A"}
                         </span>
                       </div>
@@ -479,6 +502,32 @@ export default function UserManagement() {
                   </div>
                 </div>
               )}
+
+              {/* Account Status Switch */}
+              <div className="flex items-center justify-between rounded-xl px-4 py-3 border"
+                style={{ borderColor: "#F2F2F2", backgroundColor: "#FAFAFA" }}>
+                <div>
+                  <p className="text-sm font-semibold" style={{ color: "#2C2E33" }}>Account Status</p>
+                  <p className="text-xs mt-0.5" style={{ color: "#6C757D" }}>
+                    Toggle to activate or deactivate this account
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-semibold capitalize"
+                    style={{ color: localStatus === "active" ? "#2B9724" : "#6C757D" }}>
+                    {localStatus === "active" ? "Active" : "Inactive"}
+                  </span>
+                  {isStatusUpdating ? (
+                    <Loader2 className="w-5 h-5 animate-spin" style={{ color: "#F1913D" }} />
+                  ) : (
+                    <Switch
+                      checked={localStatus === "active"}
+                      onCheckedChange={handleStatusToggle}
+                      className="data-[state=checked]:bg-[#2B9724]"
+                    />
+                  )}
+                </div>
+              </div>
 
               {/* Verify KYC */}
               <div className="border-t pt-4 flex justify-end">

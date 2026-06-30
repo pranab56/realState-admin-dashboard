@@ -20,10 +20,21 @@ export const customerApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ["customar", "partner"],
     }),
+
+    updateStatus: builder.mutation({
+      query: ({ userId, data }) => ({
+        url: `/users/status/${userId}`,
+        method: "PATCH",
+        body: data
+      }),
+      invalidatesTags: ["customar", "partner"],
+    }),
+
   }),
 });
 
 export const {
   useGetCustomarQuery,
   useVerificationKycMutation,
+  useUpdateStatusMutation
 } = customerApi;
