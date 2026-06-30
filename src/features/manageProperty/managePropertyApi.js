@@ -59,6 +59,7 @@ export const managePropertyApi = baseApi.injectEndpoints({
     }),
 
   }),
+  overrideExisting: true,
 });
 
 // Export hooks

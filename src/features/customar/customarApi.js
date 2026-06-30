@@ -30,11 +30,21 @@ export const customerApi = baseApi.injectEndpoints({
       invalidatesTags: ["customar", "partner"],
     }),
 
+
+    deleteAccount: builder.mutation({
+      query: ({ userId }) => ({
+        url: `/users/${userId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["customar", "partner"],
+    }),
+
   }),
 });
 
 export const {
   useGetCustomarQuery,
   useVerificationKycMutation,
-  useUpdateStatusMutation
+  useUpdateStatusMutation,
+  useDeleteAccountMutation
 } = customerApi;

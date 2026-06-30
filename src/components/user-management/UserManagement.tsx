@@ -19,16 +19,18 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
-import { useGetCustomarQuery, useUpdateStatusMutation, useVerificationKycMutation } from "@/features/customar/customarApi";
+import { useDeleteAccountMutation, useGetCustomarQuery, useUpdateStatusMutation, useVerificationKycMutation } from "@/features/customar/customarApi";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
 import {
+  AlertTriangle,
   CalendarCheck,
   ChevronLeft,
   ChevronRight,
   Eye,
   Loader2,
-  ShieldCheck
+  ShieldCheck,
+  Trash2,
 } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
@@ -94,12 +96,15 @@ export default function UserManagement() {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [localStatus, setLocalStatus] = useState("active");
+  const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [isReviewOpen, setIsReviewOpen] = useState(false);
   const [reviewStatus, setReviewStatus] = useState<"verified" | "rejected">("verified");
   const [reviewNotes, setReviewNotes] = useState("");
 
   const [verificationKyc, { isLoading: isReviewing }] = useVerificationKycMutation();
   const [updateStatus, { isLoading: isStatusUpdating }] = useUpdateStatusMutation();
+  const [deleteAccount, { isLoading: isDeleting }] = useDeleteAccountMutation();
 
   const { data: customerData, isLoading, isError } = useGetCustomarQuery({ page, limit: 10 }, { pollingInterval: 3000 });
   useMarkPageSeen("customer", customerData?.pagination?.total);
@@ -146,6 +151,19 @@ export default function UserManagement() {
       const e = err as { data?: { message?: string } };
       toast.error(e?.data?.message || "Failed to update status");
       setLocalStatus(checked ? "inactive" : "active");
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+    try {
+      await deleteAccount({ userId: deleteTarget._id }).unwrap();
+      toast.success("Account deleted successfully!");
+      setDeleteTarget(null);
+      setDeleteConfirmText("");
+    } catch (err: unknown) {
+      const e = err as { data?: { message?: string } };
+      toast.error(e?.data?.message || "Failed to delete account");
     }
   };
 
@@ -290,13 +308,22 @@ export default function UserManagement() {
 
                     {/* Action */}
                     <TableCell className="text-center">
-                      <button
-                        onClick={() => handleViewDetails(c)}
-                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer text-[#F1913D]"
-                        title="View Details"
-                      >
-                        <Eye className="w-5 h-5" />
-                      </button>
+                      <div className="flex items-center justify-center gap-1">
+                        <button
+                          onClick={() => handleViewDetails(c)}
+                          className="p-2 hover:bg-orange-50 rounded-lg transition-colors cursor-pointer"
+                          title="View Details"
+                        >
+                          <Eye className="w-4 h-4" style={{ color: "#F1913D" }} />
+                        </button>
+                        <button
+                          onClick={() => { setDeleteTarget(c); setDeleteConfirmText(""); }}
+                          className="p-2 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                          title="Delete Account"
+                        >
+                          <Trash2 className="w-4 h-4 text-red-500" />
+                        </button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -597,6 +624,58 @@ export default function UserManagement() {
               {isReviewing ? "Saving..." : "Submit"}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Delete Confirmation Modal ── */}
+      <Dialog open={!!deleteTarget} onOpenChange={(v) => { if (!v) { setDeleteTarget(null); setDeleteConfirmText(""); } }}>
+        <DialogContent className="sm:max-w-md rounded-2xl p-0 overflow-hidden">
+          {/* Red header */}
+          <div className="flex flex-col items-center gap-3 px-6 pt-8 pb-6 bg-red-50">
+            <div className="w-14 h-14 rounded-full bg-red-100 flex items-center justify-center">
+              <AlertTriangle className="w-7 h-7 text-red-500" />
+            </div>
+            <h2 className="text-lg font-bold text-gray-900">Delete Account</h2>
+            <p className="text-sm text-center" style={{ color: "#6C757D" }}>
+              This will permanently delete{" "}
+              <span className="font-semibold text-gray-900">
+                {deleteTarget?.firstName} {deleteTarget?.lastName}
+              </span>
+              &apos;s account. This action cannot be undone.
+            </p>
+          </div>
+
+          {/* Confirm input */}
+          <div className="px-6 py-5 space-y-3">
+            <p className="text-sm font-medium" style={{ color: "#2C2E33" }}>
+              Type <span className="font-bold text-red-500">delete</span> to confirm
+            </p>
+            <input
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              placeholder="Type delete here..."
+              className="w-full h-11 rounded-lg border text-sm px-4 outline-none focus:ring-1 focus:ring-red-400 focus:border-red-400 transition-colors"
+              style={{ borderColor: "#F2F2F2", backgroundColor: "#FAFAFA", color: "#2C2E33" }}
+            />
+            <div className="flex gap-3 pt-1">
+              <Button
+                variant="outline"
+                onClick={() => { setDeleteTarget(null); setDeleteConfirmText(""); }}
+                disabled={isDeleting}
+                className="flex-1 h-11 rounded-lg text-sm font-semibold cursor-pointer"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleDeleteConfirm}
+                disabled={deleteConfirmText !== "delete" || isDeleting}
+                className="flex-1 h-11 rounded-lg text-sm font-semibold cursor-pointer gap-2 bg-red-500 hover:bg-red-600 text-white disabled:opacity-50"
+              >
+                {isDeleting && <Loader2 className="w-4 h-4 animate-spin" />}
+                {isDeleting ? "Deleting..." : "Delete Account"}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
