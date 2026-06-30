@@ -110,6 +110,7 @@ function HotelDetailModal({
   const [activeImg, setActiveImg] = useState(0);
   const [localStatus, setLocalStatus] = useState(hotel?.status ?? "active");
   const [localFeatured, setLocalFeatured] = useState(hotel?.isFeatured ?? false);
+  const [localVerified, setLocalVerified] = useState(hotel?.isVerified ?? false);
   const [updateStatus, { isLoading: isUpdating }] = useUpdateStatusMutation();
 
   if (!hotel) return null;
@@ -123,7 +124,7 @@ function HotelDetailModal({
     try {
       await updateStatus({
         propertyId: hotel._id,
-        data: { status: localStatus, isFeatured: localFeatured },
+        data: { status: localStatus, isFeatured: localFeatured, isVerified: localVerified },
       }).unwrap();
       toast.success("Status updated successfully!");
     } catch (err: unknown) {
@@ -312,6 +313,23 @@ function HotelDetailModal({
                   <span className="text-sm font-medium"
                     style={{ color: localFeatured ? "#F1913D" : "#6C757D" }}>
                     {localFeatured ? "Featured" : "Not Featured"}
+                  </span>
+                </div>
+              </div>
+
+              {/* Verified switch */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold" style={{ color: "#2C2E33" }}>Verified</label>
+                <div className="h-11 flex items-center gap-3 px-4 rounded-lg border"
+                  style={{ borderColor: "#F2F2F2", backgroundColor: "#FAFAFA" }}>
+                  <Switch
+                    checked={localVerified}
+                    onCheckedChange={setLocalVerified}
+                    className="data-[state=checked]:bg-[#2B9724]"
+                  />
+                  <span className="text-sm font-medium"
+                    style={{ color: localVerified ? "#2B9724" : "#6C757D" }}>
+                    {localVerified ? "Verified" : "Unverified"}
                   </span>
                 </div>
               </div>
