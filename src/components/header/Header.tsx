@@ -39,7 +39,7 @@ export default function MyNavber() {
   const { data: profileData, isLoading: isProfileLoading } = useGetMyProfileQuery({});
   const user = profileData?.data;
   const fullName = user ? `${user.firstName || ""} ${user.lastName || ""}`.trim() : "";
-  const role = user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : "";
+  const displayRole = user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : "";
   const initials = fullName
     ? fullName.split(" ").map((n: string) => n[0]).slice(0, 2).join("").toUpperCase()
     : "AD";
@@ -48,7 +48,14 @@ export default function MyNavber() {
     : "";
 
   const unseen = useSelector((state: { newData: { unseen: Record<string, number> } }) => state.newData.unseen);
-  const newEntities = NEW_DATA_ENTITIES.filter((e) => (unseen[e.key] || 0) > 0);
+  const role = useSelector((s: { auth: { role: string | null } }) => s.auth.role);
+  const permissions = useSelector((s: { auth: { permissions: string[] } }) => s.auth.permissions);
+
+  const newEntities = NEW_DATA_ENTITIES.filter((e) => {
+    if ((unseen[e.key] || 0) === 0) return false;
+    if (role === "super_admin") return true;
+    return permissions.includes(e.key);
+  });
   const totalUnseen = newEntities.reduce((sum, e) => sum + (unseen[e.key] || 0), 0);
 
   const handleSelectEntity = (key: string, route: string) => {
@@ -139,7 +146,7 @@ export default function MyNavber() {
                 {fullName || "Admin"}
               </p>
               <p className="text-xs font-semibold capitalize" style={{ color: "#6C757D" }}>
-                {role || "Admin"}
+                {displayRole || "Admin"}
               </p>
             </div>
             <Avatar className="h-11 w-11 rounded-xl border-0 transition-all">

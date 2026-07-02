@@ -29,6 +29,7 @@ import {
   Users,
 } from "lucide-react";
 import { useState } from "react";
+import { useSelector } from "react-redux";
 import toast from "react-hot-toast";
 
 /* ── Types ─────────────────────────────────────────────────── */
@@ -69,6 +70,8 @@ const getTypeMeta = (type: string) =>
 
 export default function NotificationPage() {
   const [page, setPage] = useState(1);
+  const role = useSelector((s: { auth: { role: string | null } }) => s.auth.role);
+  const permissions = useSelector((s: { auth: { permissions: string[] } }) => s.auth.permissions);
 
   const { data, isLoading, isError } = useGetAllNotificationQuery(
     { page },
@@ -81,14 +84,19 @@ export default function NotificationPage() {
   if (isError)
     return <div className="p-10 text-center text-red-500">Failed to load notifications</div>;
 
-  const notifications: Notification[] = data?.data?.data || [];
-  const unreadCount: number = data?.data?.unreadCount || 0;
-  const pagination = data?.pagination || { total: 0, limit: 10, page: 1, totalPage: 1 };
+  const allNotifications: Notification[] = data?.data?.data || [];
 
-  const TOTAL = pagination.total;
-  const PER_PAGE = pagination.limit;
-  const LAST_PG = pagination.totalPage;
+  // Filter notifications by the admin's permitted types
+  const notifications = role === "super_admin"
+    ? allNotifications
+    : allNotifications.filter((n) => permissions.includes(n.type));
+
+  const unreadCount: number = notifications.filter((n) => !n.isRead).length;
+  const TOTAL = notifications.length;
+  const PER_PAGE = 10;
+  const LAST_PG = Math.max(1, Math.ceil(TOTAL / PER_PAGE));
   const PAGES = Array.from({ length: LAST_PG }, (_, i) => i + 1);
+  const pagedNotifications = notifications.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
   const handleOpenNotification = async (n: Notification) => {
     if (n.isRead) return;
@@ -157,8 +165,8 @@ export default function NotificationPage() {
           {/* List */}
           <div>
             <AnimatePresence initial={false}>
-              {notifications.length > 0 ? (
-                notifications.map((n) => {
+              {pagedNotifications.length > 0 ? (
+                pagedNotifications.map((n) => {
                   const { icon: Icon, bg, color } = getTypeMeta(n.type);
                   return (
                     <motion.div
@@ -222,7 +230,7 @@ export default function NotificationPage() {
           </div>
 
           {/* Pagination */}
-          {notifications.length > 0 && (
+          {pagedNotifications.length > 0 && (
             <div
               className="flex items-center justify-between px-6 py-4 border-t"
               style={{ borderColor: "#F2F2F2" }}
