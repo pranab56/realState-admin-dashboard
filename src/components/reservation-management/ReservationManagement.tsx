@@ -32,7 +32,7 @@ import { useMarkPageSeen } from "@/hooks/useMarkPageSeen";
 import { useNewItemsTracker } from "@/hooks/useNewItemsTracker";
 import { baseURL } from "@/utils/BaseURL";
 import { format } from "date-fns";
-import { ChevronLeft, ChevronRight, Eye, Loader2, MapPin, Pencil, Trash2, Users } from "lucide-react";
+import { ChevronLeft, ChevronRight, Eye, Loader2, MapPin, Pencil, Users } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
 import { toast } from "react-hot-toast";
@@ -303,14 +303,14 @@ export default function ReservationManagement() {
                           >
                             <Pencil className="w-4 h-4" />
                           </button>
-                          <button
+                          {/* <button
                             onClick={() => setDeleteTarget(res)}
                             className="p-2 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
                             style={{ color: "#E54848" }}
                             title="Delete"
                           >
                             <Trash2 className="w-4 h-4" />
-                          </button>
+                          </button> */}
                         </div>
                       </TableCell>
                     </TableRow>

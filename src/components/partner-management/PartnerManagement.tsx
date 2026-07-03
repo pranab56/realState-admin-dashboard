@@ -95,7 +95,29 @@ function StatusBadge({ status }: { status: string }) {
     </span>
   );
 }
+function getKycStatus(partner: Partner) {
+  if (partner.verification) {
+    return partner.verification.status?.toLowerCase() || "pending";
+  }
+  return partner.isVerified ? "verified" : "unverified";
+}
 
+function KycStatusBadge({ status }: { status: string }) {
+  const normalized = status?.toLowerCase();
+  const map: Record<string, { bg: string; color: string; label: string }> = {
+    verified: { bg: "#E8F5E9", color: "#2B9724", label: "Verified" },
+    rejected: { bg: "#FEE2E2", color: "#DC3545", label: "Rejected" },
+    pending: { bg: "#FEF0E4", color: "#F1913D", label: "Pending" },
+    unverified: { bg: "#FEE2E2", color: "#DC3545", label: "Unverified" },
+  };
+  const { bg, color, label } = map[normalized] || map.unverified;
+  return (
+    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold"
+      style={{ backgroundColor: bg, color }}>
+      {label}
+    </span>
+  );
+}
 /* ── Main component ──────────────────────────────────────────── */
 export default function PartnerManagement() {
   const [page, setPage] = useState(1);
@@ -137,7 +159,13 @@ export default function PartnerManagement() {
         .some((value) => value.toLowerCase().includes(query))
       : true;
     const matchesStatus = statusFilter === "all" || p.status.toLowerCase() === statusFilter;
-    const matchesKyc = kycFilter === "all" || p.isVerified === (kycFilter === "verified");
+    const kycStatus = getKycStatus(p);
+    const matchesKyc =
+      kycFilter === "all"
+        ? true
+        : kycFilter === "unverified"
+        ? kycStatus !== "verified"
+        : kycStatus === kycFilter;
     return matchesSearch && matchesStatus && matchesKyc;
   });
 
@@ -148,9 +176,9 @@ export default function PartnerManagement() {
 
   const dynamicStats = [
     { label: "Total Partners", value: TOTAL.toLocaleString(), icon: CalendarCheck, bgColor: "#E8F5E9", color: "#2B9724" },
-    { label: "Active Partners", value: partners.filter((p: Partner) => p.status === 'active').length.toString(), icon: CalendarCheck, bgColor: "#E8F5E9", color: "#2B9724" },
-    { label: "Verified KYC", value: partners.filter((p: Partner) => p.isVerified).length.toString(), icon: ShieldCheck, bgColor: "#E8F5E9", color: "#2B9724" },
-    { label: "Unverified KYC", value: partners.filter((p: Partner) => !p.isVerified).length.toString(), icon: AlertTriangle, bgColor: "#FEE2E2", color: "#DC3545" },
+    { label: "Verified KYC", value: partners.filter((p: Partner) => getKycStatus(p) === "verified").length.toString(), icon: ShieldCheck, bgColor: "#E8F5E9", color: "#2B9724" },
+    { label: "Rejected KYC", value: partners.filter((p: Partner) => getKycStatus(p) === "rejected").length.toString(), icon: AlertTriangle, bgColor: "#FEE2E2", color: "#DC3545" },
+    { label: "Unverified KYC", value: partners.filter((p: Partner) => getKycStatus(p) !== "verified").length.toString(), icon: AlertTriangle, bgColor: "#FEE2E2", color: "#DC3545" },
   ];
 
   const handleViewDetails = (partner: Partner) => {
@@ -284,7 +312,7 @@ export default function PartnerManagement() {
                 </Select>
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="partner-kyc-filter">KYC Verified</Label>
+                <Label htmlFor="partner-kyc-filter">KYC Status</Label>
                 <Select
                   value={kycFilter}
                   onValueChange={(value) => setKycFilter(value)}
@@ -296,6 +324,8 @@ export default function PartnerManagement() {
                   <SelectContent>
                     <SelectItem value="all">All KYC</SelectItem>
                     <SelectItem value="verified">Verified</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="rejected">Rejected</SelectItem>
                     <SelectItem value="unverified">Unverified</SelectItem>
                   </SelectContent>
                 </Select>
@@ -324,7 +354,7 @@ export default function PartnerManagement() {
                     User ID
                   </TableHead>
                   <TableHead className="text-xs font-semibold text-center" style={{ color: "#6C757D" }}>
-                    Action
+                    KYC Status
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -365,11 +395,7 @@ export default function PartnerManagement() {
                       <StatusBadge status={p.status} />
                     </TableCell>
                     <TableCell>
-                      <span
-                        className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${p.isVerified ? "bg-[#E8F5E9] text-[#2B9724]" : "bg-[#FEE2E2] text-[#DC3545]"}`}
-                      >
-                        {p.isVerified ? "Verified" : "Unverified"}
-                      </span>
+                      <KycStatusBadge status={getKycStatus(p)} />
                     </TableCell>
 
                     <TableCell>
@@ -545,14 +571,15 @@ export default function PartnerManagement() {
                       </div>
                       <div className="flex justify-between border-b pb-1">
                         <span className="text-sm text-gray-500">KYC Verification</span>
-
                         <span
-                          className={`text-sm font-medium capitalize ${selectedPartner.verification?.status?.toLowerCase() === "verified"
+                          className={`text-sm font-medium capitalize ${getKycStatus(selectedPartner) === "verified"
                             ? "text-green-600"
-                            : ""
+                            : getKycStatus(selectedPartner) === "rejected"
+                              ? "text-red-600"
+                              : "text-orange-600"
                             }`}
                         >
-                          {selectedPartner.verification?.status || "N/A"}
+                          {getKycStatus(selectedPartner) === "unverified" ? "Unverified" : getKycStatus(selectedPartner)}
                         </span>
                       </div>
                     </div>

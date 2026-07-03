@@ -90,7 +90,31 @@ function StatusBadge({ status }: { status: string }) {
     </span>
   );
 }
+function getKycStatus(user: User) {
+  if (user.verification) {
+    return user.verification.status?.toLowerCase() || "pending";
+  }
+  return user.isVerified ? "verified" : "unverified";
+}
 
+function KycStatusBadge({ status }: { status: string }) {
+  const normalized = status?.toLowerCase();
+  const map: Record<string, { bg: string; color: string; label: string }> = {
+    verified: { bg: "#E8F5E9", color: "#2B9724", label: "Verified" },
+    rejected: { bg: "#FEE2E2", color: "#DC3545", label: "Rejected" },
+    pending: { bg: "#FEF0E4", color: "#F1913D", label: "Pending" },
+    unverified: { bg: "#FEE2E2", color: "#DC3545", label: "Unverified" },
+  };
+  const { bg, color, label } = map[normalized] || map.unverified;
+  return (
+    <span
+      className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold"
+      style={{ backgroundColor: bg, color }}
+    >
+      {label}
+    </span>
+  );
+}
 /* ── Main component ──────────────────────────────────────────── */
 export default function UserManagement() {
   const [page, setPage] = useState(1);
@@ -132,7 +156,13 @@ export default function UserManagement() {
         .some((value) => value.toLowerCase().includes(query))
       : true;
     const matchesStatus = statusFilter === "all" || c.status.toLowerCase() === statusFilter;
-    const matchesKyc = kycFilter === "all" || c.isVerified === (kycFilter === "verified");
+    const kycStatus = getKycStatus(c);
+    const matchesKyc =
+      kycFilter === "all"
+        ? true
+        : kycFilter === "unverified"
+        ? kycStatus !== "verified"
+        : kycStatus === kycFilter;
     return matchesSearch && matchesStatus && matchesKyc;
   });
 
@@ -143,9 +173,9 @@ export default function UserManagement() {
 
   const dynamicStats = [
     { label: "Total users", value: TOTAL.toLocaleString(), icon: CalendarCheck, iconBg: "#E8F5E9", iconColor: "#2B9724" },
-    { label: "Active Now", value: customers.filter((c: User) => c.status === 'active').length.toString(), icon: CalendarCheck, iconBg: "#E8F5E9", iconColor: "#2B9724" },
-    { label: "Verified KYC", value: customers.filter((c: User) => c.isVerified).length.toString(), icon: ShieldCheck, iconBg: "#E8F5E9", iconColor: "#2B9724" },
-    { label: "Unverified KYC", value: customers.filter((c: User) => !c.isVerified).length.toString(), icon: AlertTriangle, iconBg: "#FEE2E2", iconColor: "#DC3545" },
+    { label: "Verified KYC", value: customers.filter((c: User) => getKycStatus(c) === "verified").length.toString(), icon: ShieldCheck, iconBg: "#E8F5E9", iconColor: "#2B9724" },
+    { label: "Rejected KYC", value: customers.filter((c: User) => getKycStatus(c) === "rejected").length.toString(), icon: AlertTriangle, iconBg: "#FEE2E2", iconColor: "#DC3545" },
+    { label: "Unverified KYC", value: customers.filter((c: User) => getKycStatus(c) !== "verified").length.toString(), icon: AlertTriangle, iconBg: "#FEE2E2", iconColor: "#DC3545" },
   ];
 
   const handleViewDetails = (user: User) => {
@@ -280,7 +310,7 @@ export default function UserManagement() {
                 </Select>
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="user-kyc-filter">KYC Verified</Label>
+                <Label htmlFor="user-kyc-filter">KYC Status</Label>
                 <Select
                   value={kycFilter}
                   onValueChange={(value) => setKycFilter(value)}
@@ -292,6 +322,8 @@ export default function UserManagement() {
                   <SelectContent>
                     <SelectItem value="all">All KYC</SelectItem>
                     <SelectItem value="verified">Verified</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="rejected">Rejected</SelectItem>
                     <SelectItem value="unverified">Unverified</SelectItem>
                   </SelectContent>
                 </Select>
@@ -320,7 +352,7 @@ export default function UserManagement() {
                     User ID
                   </TableHead>
                   <TableHead className="text-xs font-semibold text-center" style={{ color: "#6C757D" }}>
-                    Action
+                    KYC Status
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -361,11 +393,7 @@ export default function UserManagement() {
                     {/* Status */}
                     <TableCell><StatusBadge status={c.status} /></TableCell>
                     <TableCell>
-                      <span
-                        className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${c.isVerified ? "bg-[#E8F5E9] text-[#2B9724]" : "bg-[#FEE2E2] text-[#DC3545]"}`}
-                      >
-                        {c.isVerified ? "Verified" : "Unverified"}
-                      </span>
+                      <KycStatusBadge status={getKycStatus(c)} />
                     </TableCell>
 
                     {/* Join Date */}
@@ -547,12 +575,14 @@ export default function UserManagement() {
                       <div className="flex justify-between border-b pb-1">
                         <span className="text-sm text-gray-500">KYC Verification</span>
                         <span
-                          className={`text-sm font-medium capitalize ${selectedUser.verification?.status?.toLowerCase() === "verified"
+                          className={`text-sm font-medium capitalize ${getKycStatus(selectedUser) === "verified"
                             ? "text-green-600"
-                            : ""
+                            : getKycStatus(selectedUser) === "rejected"
+                              ? "text-red-600"
+                              : "text-orange-600"
                             }`}
                         >
-                          {selectedUser.verification?.status || "N/A"}
+                          {getKycStatus(selectedUser) === "unverified" ? "Unverified" : getKycStatus(selectedUser)}
                         </span>
                       </div>
                     </div>
