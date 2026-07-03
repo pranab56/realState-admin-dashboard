@@ -62,7 +62,7 @@ function StatusBadge({ status }: { status: string }) {
 export default function NewsletterManagement() {
   const [page, setPage] = useState(1);
 
-  const { data: newsletterData, isLoading, isError } = useGetNewsLetterQuery({ page }, { pollingInterval: 3000 });
+  const { data: newsletterData, isLoading, isError } = useGetNewsLetterQuery({ page });
   useMarkPageSeen("newsletter", newsletterData?.pagination?.total);
   const { isNew, dismiss, dismissAll } = useNewItemsTracker(
     "newsletter",

@@ -87,7 +87,7 @@ export default function PoaManagement() {
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<Consultation | null>(null);
 
-  const { data: poaData, isLoading, isError } = useGetPoaQuery({ page }, { pollingInterval: 3000 });
+  const { data: poaData, isLoading, isError } = useGetPoaQuery({ page });
   useMarkPageSeen("poa", poaData?.pagination?.total);
   const { isNew, dismiss, dismissAll } = useNewItemsTracker(
     "poa",

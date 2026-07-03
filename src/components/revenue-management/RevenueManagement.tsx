@@ -104,7 +104,7 @@ export default function RevenueManagement() {
   const [selectedTxn, setSelectedTxn] = useState<Transaction | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const { data: revenueData, isLoading, isError } = useGetRevenueQuery({ page }, { pollingInterval: 3000 });
+  const { data: revenueData, isLoading, isError } = useGetRevenueQuery({ page });
   useMarkPageSeen("revenue", revenueData?.pagination?.total);
   const { isNew, dismiss, dismissAll } = useNewItemsTracker(
     "revenue",

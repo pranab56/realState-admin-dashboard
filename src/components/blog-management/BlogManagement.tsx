@@ -58,7 +58,7 @@ export default function BlogManagement() {
   const [selectedBlog, setSelectedBlog] = useState<Blog | null>(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
-  const { data: blogData, isLoading, isError } = useGetBlogsQuery({ page }, { pollingInterval: 3000 });
+  const { data: blogData, isLoading, isError } = useGetBlogsQuery({ page });
   useMarkPageSeen("blog", blogData?.pagination?.total);
   const { isNew, dismiss, dismissAll } = useNewItemsTracker(
     "blog",

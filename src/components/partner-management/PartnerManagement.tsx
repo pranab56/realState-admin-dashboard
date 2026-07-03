@@ -9,7 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import {
   Table,
   TableBody,
@@ -101,6 +102,9 @@ export default function PartnerManagement() {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [selectedPartner, setSelectedPartner] = useState<Partner | null>(null);
   const [localStatus, setLocalStatus] = useState("active");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [kycFilter, setKycFilter] = useState("all");
+  const [searchTerm, setSearchTerm] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<Partner | null>(null);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [isReviewOpen, setIsReviewOpen] = useState(false);
@@ -111,7 +115,7 @@ export default function PartnerManagement() {
   const [updateStatus, { isLoading: isStatusUpdating }] = useUpdateStatusMutation();
   const [deleteAccount, { isLoading: isDeleting }] = useDeleteAccountMutation();
 
-  const { data: partnerData, isLoading, isError } = useGetPartnerQuery({ page, limit: 10 }, { pollingInterval: 3000 });
+  const { data: partnerData, isLoading, isError } = useGetPartnerQuery({ page, limit: 10 });
   useMarkPageSeen("partner", partnerData?.pagination?.total);
   const { isNew, dismiss, dismissAll } = useNewItemsTracker(
     "partner",
@@ -125,8 +129,17 @@ export default function PartnerManagement() {
   const newCount = partners.filter((p: Partner) => isNew(p._id)).length;
   const pagination = partnerData?.pagination || { total: 0, limit: 10, page: 1, totalPage: 1 };
 
-  /* filtered rows (defaulting to all since tabs are currently hidden) */
-  const filtered = partners;
+  const filtered = partners.filter((p) => {
+    const query = searchTerm.trim().toLowerCase();
+    const matchesSearch = query
+      ? [p.firstName, p.lastName, p.email, p.uid, p.phone]
+        .filter(Boolean)
+        .some((value) => value.toLowerCase().includes(query))
+      : true;
+    const matchesStatus = statusFilter === "all" || p.status.toLowerCase() === statusFilter;
+    const matchesKyc = kycFilter === "all" || p.isVerified === (kycFilter === "verified");
+    return matchesSearch && matchesStatus && matchesKyc;
+  });
 
   const TOTAL = pagination.total;
   const PER_PAGE = pagination.limit;
@@ -136,6 +149,8 @@ export default function PartnerManagement() {
   const dynamicStats = [
     { label: "Total Partners", value: TOTAL.toLocaleString(), icon: CalendarCheck, bgColor: "#E8F5E9", color: "#2B9724" },
     { label: "Active Partners", value: partners.filter((p: Partner) => p.status === 'active').length.toString(), icon: CalendarCheck, bgColor: "#E8F5E9", color: "#2B9724" },
+    { label: "Verified KYC", value: partners.filter((p: Partner) => p.isVerified).length.toString(), icon: ShieldCheck, bgColor: "#E8F5E9", color: "#2B9724" },
+    { label: "Unverified KYC", value: partners.filter((p: Partner) => !p.isVerified).length.toString(), icon: AlertTriangle, bgColor: "#FEE2E2", color: "#DC3545" },
   ];
 
   const handleViewDetails = (partner: Partner) => {
@@ -238,6 +253,56 @@ export default function PartnerManagement() {
             <MarkAllSeenButton count={newCount} onClick={() => dismissAll()} />
           </div>
 
+          <div className="px-6 pb-4">
+            <div className="grid gap-3 md:grid-cols-[1.4fr_0.9fr_0.9fr]">
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="partner-search">Search</Label>
+                <Input
+                  id="partner-search"
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                  placeholder="Search by name, email, UID, or phone"
+                  className="h-11"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="partner-status-filter">Status</Label>
+                <Select
+                  value={statusFilter}
+                  onValueChange={(value) => setStatusFilter(value)}
+                >
+                  <SelectTrigger id="partner-status-filter" className="h-11 py-5 w-full text-sm rounded-lg border"
+                    style={{ borderColor: "#F2F2F2", backgroundColor: "#FAFAFA", color: "#2C2E33" }}>
+                    <SelectValue placeholder="All Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                    <SelectItem value="suspended">Suspended</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="partner-kyc-filter">KYC Verified</Label>
+                <Select
+                  value={kycFilter}
+                  onValueChange={(value) => setKycFilter(value)}
+                >
+                  <SelectTrigger id="partner-kyc-filter" className="h-11 py-5  w-full text-sm rounded-lg border"
+                    style={{ borderColor: "#F2F2F2", backgroundColor: "#FAFAFA", color: "#2C2E33" }}>
+                    <SelectValue placeholder="All KYC" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All KYC</SelectItem>
+                    <SelectItem value="verified">Verified</SelectItem>
+                    <SelectItem value="unverified">Unverified</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
           {/* Table */}
           <div className="overflow-x-auto">
             <Table>
@@ -248,6 +313,9 @@ export default function PartnerManagement() {
                   </TableHead>
                   <TableHead className="text-xs font-semibold" style={{ color: "#6C757D" }}>
                     Status
+                  </TableHead>
+                  <TableHead className="text-xs font-semibold" style={{ color: "#6C757D" }}>
+                    KYC Verified
                   </TableHead>
                   <TableHead className="text-xs font-semibold" style={{ color: "#6C757D" }}>
                     Join Date
@@ -296,6 +364,13 @@ export default function PartnerManagement() {
                     <TableCell>
                       <StatusBadge status={p.status} />
                     </TableCell>
+                    <TableCell>
+                      <span
+                        className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${p.isVerified ? "bg-[#E8F5E9] text-[#2B9724]" : "bg-[#FEE2E2] text-[#DC3545]"}`}
+                      >
+                        {p.isVerified ? "Verified" : "Unverified"}
+                      </span>
+                    </TableCell>
 
                     <TableCell>
                       <span className="text-sm" style={{ color: "#2C2E33" }}>
@@ -330,7 +405,7 @@ export default function PartnerManagement() {
 
                 {filtered.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-12 text-sm" style={{ color: "#6C757D" }}>
+                    <TableCell colSpan={6} className="text-center py-12 text-sm" style={{ color: "#6C757D" }}>
                       No partners found.
                     </TableCell>
                   </TableRow>
@@ -473,8 +548,8 @@ export default function PartnerManagement() {
 
                         <span
                           className={`text-sm font-medium capitalize ${selectedPartner.verification?.status?.toLowerCase() === "verified"
-                              ? "text-green-600"
-                              : ""
+                            ? "text-green-600"
+                            : ""
                             }`}
                         >
                           {selectedPartner.verification?.status || "N/A"}

@@ -95,7 +95,7 @@ export default function TransportationManagement() {
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<Ride | null>(null);
 
-  const { data: rideData, isLoading, isError } = useGetTransportationQuery({ page }, { pollingInterval: 3000 });
+  const { data: rideData, isLoading, isError } = useGetTransportationQuery({ page });
   useMarkPageSeen("transportation", rideData?.pagination?.total);
   const { isNew, dismiss, dismissAll } = useNewItemsTracker(
     "transportation",

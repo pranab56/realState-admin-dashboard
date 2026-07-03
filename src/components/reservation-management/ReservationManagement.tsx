@@ -129,7 +129,7 @@ export default function ReservationManagement() {
   const [editStatus, setEditStatus] = useState<ReservationStatus>("pending");
   const [deleteTarget, setDeleteTarget] = useState<Reservation | null>(null);
 
-  const { data: reservationData, isLoading, isError } = useGetReservationQuery({ page }, { pollingInterval: 3000 });
+  const { data: reservationData, isLoading, isError } = useGetReservationQuery({ page });
   useMarkPageSeen("reservation", reservationData?.pagination?.total);
   const { isNew, dismiss, dismissAll } = useNewItemsTracker(
     "reservation",

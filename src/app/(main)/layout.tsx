@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 import OptimusSidebar from "@/components/appSidebar/AppsideBar";
 import PermissionInitializer from "@/components/auth/PermissionInitializer";
 import Header from "@/components/header/Header";
-import GlobalNewDataWatcher from "@/components/notifications/GlobalNewDataWatcher";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import "../globals.css";
@@ -24,7 +23,6 @@ export default function RootLayout({
 }>) {
   return (
     <ProtectedRoute>
-      <GlobalNewDataWatcher />
       <PermissionInitializer />
       <SidebarProvider>
         <OptimusSidebar />

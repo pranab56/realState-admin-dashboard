@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/table";
 import {
   useAssignAdminMutation,
+  useDeleteUserMutation,
   useGetAllAdminQuery,
   useUpdateAssignUserMutation,
 } from "@/features/assignAdmin/assignAdminApi";
@@ -33,6 +34,7 @@ import {
   Loader2,
   Pencil,
   ShieldCheck,
+  Trash2,
   UserPlus,
 } from "lucide-react";
 import { useState } from "react";
@@ -179,9 +181,15 @@ export default function AssignAdmin() {
   const [editForm, setEditForm] = useState({ firstName: "", lastName: "", email: "" });
   const [editPerms, setEditPerms] = useState<string[]>([]);
 
+  /* Delete modal state */
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Admin | null>(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+
   const { data, isLoading, isError } = useGetAllAdminQuery({ page, limit: 10 });
   const [assignAdmin, { isLoading: isCreating }] = useAssignAdminMutation();
   const [updateAdmin, { isLoading: isUpdating }] = useUpdateAssignUserMutation();
+  const [deleteAdmin, { isLoading: isDeleting }] = useDeleteUserMutation();
 
   if (isLoading) return <CustomLoading />;
   if (isError)
@@ -238,6 +246,31 @@ export default function AssignAdmin() {
     } catch (err: unknown) {
       const e = err as { data?: { message?: string } };
       toast.error(e?.data?.message || "Failed to update admin");
+    }
+  };
+
+  const openDelete = (admin: Admin) => {
+    setDeleteTarget(admin);
+    setDeleteConfirmText("");
+    setIsDeleteOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+    if (deleteConfirmText.trim().toLowerCase() !== "delete") {
+      toast.error('Type "delete" to confirm.');
+      return;
+    }
+
+    try {
+      await deleteAdmin(deleteTarget._id).unwrap();
+      toast.success("Admin deleted successfully!");
+      setIsDeleteOpen(false);
+      setDeleteTarget(null);
+      setDeleteConfirmText("");
+    } catch (err: unknown) {
+      const e = err as { data?: { message?: string } };
+      toast.error(e?.data?.message || "Failed to delete admin");
     }
   };
 
@@ -357,13 +390,22 @@ export default function AssignAdmin() {
                     </TableCell>
 
                     <TableCell className="text-center">
-                      <button
-                        onClick={() => openEdit(admin)}
-                        className="p-2 hover:bg-orange-50 rounded-lg transition-colors cursor-pointer"
-                        title="Edit Permissions"
-                      >
-                        <Pencil className="w-4 h-4" style={{ color: "#F1913D" }} />
-                      </button>
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          onClick={() => openEdit(admin)}
+                          className="p-2 hover:bg-orange-50 rounded-lg transition-colors cursor-pointer"
+                          title="Edit Permissions"
+                        >
+                          <Pencil className="w-4 h-4" style={{ color: "#F1913D" }} />
+                        </button>
+                        <button
+                          onClick={() => openDelete(admin)}
+                          className="p-2 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                          title="Delete Admin"
+                        >
+                          <Trash2 className="w-4 h-4 text-red-500" />
+                        </button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -528,6 +570,77 @@ export default function AssignAdmin() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Delete Modal ── */}
+      <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">Delete Admin</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <p className="text-sm" style={{ color: "#6C757D" }}>
+              This action cannot be undone. To permanently delete this admin, type <strong>delete</strong> below.
+            </p>
+            <div className="rounded-lg border px-4 py-3" style={{ borderColor: "#F2F2F2", backgroundColor: "#FAFAFA" }}>
+              <p className="text-sm font-semibold" style={{ color: "#2C2E33" }}>
+                {deleteTarget ? `${deleteTarget.firstName} ${deleteTarget.lastName}` : "Admin"}
+              </p>
+              <p className="text-xs" style={{ color: "#6C757D" }}>
+                {deleteTarget?.email}
+              </p>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm font-semibold" style={{ color: "#2C2E33" }}>
+                Confirm Delete
+              </Label>
+              <Input
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                placeholder="Type delete to confirm"
+                className="h-11 rounded-sm border text-sm px-4 focus-visible:ring-1 focus-visible:ring-[#F1913D] focus-visible:border-[#F1913D]"
+                style={{
+                  borderColor: deleteConfirmText.trim().length > 0 && deleteConfirmText.trim().toLowerCase() !== "delete" ? "#DC3545" : "#F2F2F2",
+                  color: "#2C2E33",
+                  backgroundColor: "#FAFAFA",
+                }}
+              />
+              {deleteConfirmText.trim().length > 0 && deleteConfirmText.trim().toLowerCase() !== "delete" && (
+                <p className="text-xs mt-1" style={{ color: "#DC3545" }}>
+                  Please type delete exactly to confirm.
+                </p>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter className="pt-2 gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsDeleteOpen(false)}
+              className="flex-1 h-11 rounded-xl font-semibold border"
+              style={{ borderColor: "#F2F2F2", color: "#2C2E33" }}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting || deleteConfirmText.trim().toLowerCase() !== "delete"}
+              className="flex-1 h-11 rounded-xl font-semibold text-white gap-2"
+              style={{
+                backgroundColor:
+                  isDeleting || deleteConfirmText.trim().toLowerCase() !== "delete"
+                    ? "#E9A8A8"
+                    : "#DC3545",
+              }}
+            >
+              {isDeleting && <Loader2 className="w-4 h-4 animate-spin" />}
+              {isDeleting ? "Deleting..." : "Delete Admin"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

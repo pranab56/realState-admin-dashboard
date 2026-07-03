@@ -29,11 +29,14 @@ import {
   LayoutDashboard,
   LogOut,
   LucideIcon,
+  Mail,
+  Megaphone,
   Scale,
   ScrollText,
   Settings,
   Star,
   User,
+  UserPlus,
   Users,
 } from "lucide-react";
 import Image from "next/image";
@@ -82,8 +85,8 @@ const menuItems: MenuItem[] = [
   { name: "Inquiries Management", path: "/inquiries", icon: Inbox, key: "inquiries" },
   { name: "Review Management", path: "/review", icon: Star, key: "review" },
   { name: "Blog Management", path: "/blog-management", icon: FileText, key: "blog" },
-  { name: "Newsletter Management", path: "/newsletter-management", icon: FileText, key: "newsletter" },
-  { name: "Advertisement Management", path: "/advertisement-management", icon: FileText, key: "advertisement" },
+  { name: "Newsletter Management", path: "/newsletter-management", icon: Mail, key: "newsletter" },
+  { name: "Advertisement Management", path: "/advertisement-management", icon: Megaphone, key: "advertisement" },
   { name: "Profile", path: "/profile", icon: User, key: "profile" },
   {
     name: "Disclaimer",
@@ -94,7 +97,7 @@ const menuItems: MenuItem[] = [
       { name: "Terms & Condition", path: "/disclaimer/terms-and-condition", key: "termsAndCondition" },
     ],
   },
-  { name: "Assign Admin", path: "/assign-admin", icon: Settings, key: "assignAdmin" },
+  { name: "Admin Management", path: "/assign-admin", icon: UserPlus, key: "assignAdmin" },
   { name: "Settings", path: "/settings", icon: Settings, key: "settings" },
 ];
 

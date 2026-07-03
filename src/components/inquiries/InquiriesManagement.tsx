@@ -81,7 +81,7 @@ export default function InquiriesManagement() {
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<Inquiry | null>(null);
 
-  const { data: inquiriesData, isLoading, isError } = useGetInquiriesQuery({ page }, { pollingInterval: 3000 });
+  const { data: inquiriesData, isLoading, isError } = useGetInquiriesQuery({ page });
   useMarkPageSeen("inquiries", inquiriesData?.pagination?.total);
   const { isNew, dismiss, dismissAll } = useNewItemsTracker(
     "inquiries",

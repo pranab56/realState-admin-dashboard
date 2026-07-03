@@ -14,10 +14,7 @@ const rawBaseQuery = fetchBaseQuery({
   },
 });
 
-// Wraps every request: if the backend ever responds 401 (expired/invalid
-// token), force a logout and send the admin back to the login page —
-// regardless of which page triggered the call. Auth endpoints are excluded
-// since a 401 there means "wrong credentials", not "session expired".
+
 const baseQueryWithReauth = async (args, api, extraOptions) => {
   const result = await rawBaseQuery(args, api, extraOptions);
 

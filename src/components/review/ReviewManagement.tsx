@@ -116,7 +116,7 @@ export default function ReviewManagement() {
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<Review | null>(null);
 
-  const { data: reviewData, isLoading, isError } = useGetReviewsQuery({ page }, { pollingInterval: 3000 });
+  const { data: reviewData, isLoading, isError } = useGetReviewsQuery({ page });
   useMarkPageSeen("review", reviewData?.pagination?.total);
   const { isNew, dismiss, dismissAll } = useNewItemsTracker(
     "review",

@@ -523,7 +523,7 @@ export default function PropertyListing() {
   if (isVerified !== "") params.isVerified = isVerified;
   if (listingPurpose) params.listingPurpose = listingPurpose;
 
-  const { data: propertyListingData, isLoading, isError } = useGetManageListingQuery(params, { pollingInterval: 3000 });
+  const { data: propertyListingData, isLoading, isError } = useGetManageListingQuery(params);
   useMarkPageSeen("propertyListing", propertyListingData?.pagination?.total);
   const { isNew, dismiss, dismissAll } = useNewItemsTracker(
     "propertyListing",

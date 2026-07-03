@@ -54,7 +54,7 @@ function StatusBadge({ status }: { status?: string }) {
     active: { bg: "#E8F5E9", color: "#2B9724", border: "#2B9724" },
     draft: { bg: "#F2F2F2", color: "#6C757D", border: "#D1D5DB" },
     inactive: { bg: "#FEF0E4", color: "#F1913D", border: "#F1913D" },
-    close: { bg: "#FEE2E2", color: "#DC3545", border: "#DC3545" },
+    closed: { bg: "#FEE2E2", color: "#DC3545", border: "#DC3545" },
   };
   const s = status?.toLowerCase() ?? "";
   const style = map[s] ?? { bg: "#F9FAFB", color: "#6C757D", border: "#D1D5DB" };
@@ -67,7 +67,12 @@ function StatusBadge({ status }: { status?: string }) {
 }
 
 const STRUCTURE_TYPES = ["hotel", "resort", "guest_house", "treehouse", "houseboat", "farmhouse", "villa"];
-const STATUS_OPTIONS = ["active", "draft", "inactive", "close"];
+
+const STATUS_OPTIONS = ["active", "draft", "inactive", "closed"];
+
+function getStatusLabel(status: string) {
+  return status.charAt(0).toUpperCase() + status.slice(1);
+}
 
 interface Hotel {
   _id: string;
@@ -110,7 +115,6 @@ function HotelDetailModal({
   const [activeImg, setActiveImg] = useState(0);
   const [localStatus, setLocalStatus] = useState(hotel?.status ?? "active");
   const [localFeatured, setLocalFeatured] = useState(hotel?.isFeatured ?? false);
-  const [localVerified, setLocalVerified] = useState(hotel?.isVerified ?? false);
   const [updateStatus, { isLoading: isUpdating }] = useUpdateStatusMutation();
 
   if (!hotel) return null;
@@ -124,9 +128,10 @@ function HotelDetailModal({
     try {
       await updateStatus({
         propertyId: hotel._id,
-        data: { status: localStatus, isFeatured: localFeatured, isVerified: localVerified },
+        data: { status: localStatus, isFeatured: localFeatured },
       }).unwrap();
       toast.success("Status updated successfully!");
+      onClose();
     } catch (err: unknown) {
       const e = err as { data?: { message?: string } };
       toast.error(e?.data?.message || "Failed to update status");
@@ -284,20 +289,29 @@ function HotelDetailModal({
             <SectionLabel>Manage Status</SectionLabel>
             <div className="flex items-end gap-4 flex-wrap">
 
-              {/* Status dropdown */}
-              <div className="flex flex-col gap-1.5 flex-1 min-w-[160px]">
+              {/* Status buttons */}
+              <div className="flex flex-col gap-1.5 flex-1 min-w-[60px]">
                 <label className="text-xs font-semibold" style={{ color: "#2C2E33" }}>Property Status</label>
-                <Select value={localStatus} onValueChange={setLocalStatus}>
-                  <SelectTrigger className="h-11 w-full rounded-lg border text-sm"
-                    style={{ borderColor: "#F2F2F2", backgroundColor: "#FAFAFA", color: "#2C2E33" }}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {STATUS_OPTIONS.map((s) => (
-                      <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="grid grid-cols-4 gap-2">
+                  {STATUS_OPTIONS.map((s) => {
+                    const isSelected = localStatus === s;
+                    return (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => setLocalStatus(s)}
+                        className="h-11 rounded-lg cursor-pointer border text-sm font-medium transition-colors"
+                        style={{
+                          borderColor: isSelected ? "#F1913D" : "#E5E7EB",
+                          backgroundColor: isSelected ? "#FDF3E8" : "#FAFAFA",
+                          color: isSelected ? "#C2410C" : "#2C2E33",
+                        }}
+                      >
+                        {getStatusLabel(s)}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               {/* Featured switch */}
@@ -313,23 +327,6 @@ function HotelDetailModal({
                   <span className="text-sm font-medium"
                     style={{ color: localFeatured ? "#F1913D" : "#6C757D" }}>
                     {localFeatured ? "Featured" : "Not Featured"}
-                  </span>
-                </div>
-              </div>
-
-              {/* Verified switch */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold" style={{ color: "#2C2E33" }}>Verified</label>
-                <div className="h-11 flex items-center gap-3 px-4 rounded-lg border"
-                  style={{ borderColor: "#F2F2F2", backgroundColor: "#FAFAFA" }}>
-                  <Switch
-                    checked={localVerified}
-                    onCheckedChange={setLocalVerified}
-                    className="data-[state=checked]:bg-[#2B9724]"
-                  />
-                  <span className="text-sm font-medium"
-                    style={{ color: localVerified ? "#2B9724" : "#6C757D" }}>
-                    {localVerified ? "Verified" : "Unverified"}
                   </span>
                 </div>
               </div>
@@ -355,15 +352,14 @@ export default function ManageHotel() {
   const [page, setPage] = useState(1);
   const [structureType, setStructureType] = useState("");
   const [status, setStatus] = useState("");
-  const [isVerified, setIsVerified] = useState("");
+
   const [selectedHotel, setSelectedHotel] = useState<Hotel | null>(null);
 
   const params: Record<string, string | number> = { page, limit: 10 };
   if (structureType) params.structureType = structureType;
   if (status) params.status = status;
-  if (isVerified !== "") params.isVerified = isVerified;
 
-  const { data: hotelData, isLoading, isError } = useGetManageHotelsQuery(params, { pollingInterval: 5000 });
+  const { data: hotelData, isLoading, isError } = useGetManageHotelsQuery(params);
 
   const hotels: Hotel[] = hotelData?.data ?? [];
   const pagination = hotelData?.pagination ?? { total: 0, limit: 10, page: 1, totalPage: 1 };
@@ -423,26 +419,13 @@ export default function ManageHotel() {
               <SelectContent>
                 <SelectItem value="all">All Statuses</SelectItem>
                 {STATUS_OPTIONS.map((s) => (
-                  <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>
+                  <SelectItem key={s} value={s} className="capitalize">{getStatusLabel(s)}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium" style={{ color: "#6C757D" }}>Verification</label>
-            <Select onValueChange={handleFilter(setIsVerified)} defaultValue="all">
-              <SelectTrigger className="h-10 w-full text-sm rounded-lg border"
-                style={{ borderColor: "#F2F2F2", backgroundColor: "#FAFAFA", color: "#2C2E33" }}>
-                <SelectValue placeholder="Any" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Any</SelectItem>
-                <SelectItem value="true">Verified</SelectItem>
-                <SelectItem value="false">Unverified</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+
         </div>
       </Card>
 

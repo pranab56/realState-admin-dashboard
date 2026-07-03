@@ -3,13 +3,13 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { CustomLoading } from "@/hooks/CustomLoading";
-import { cn } from "@/lib/utils";
 import {
   useGetAllNotificationQuery,
   useReadAllNotificationMutation,
   useReadNotificationMutation,
 } from "@/features/notification/notificationApi";
+import { CustomLoading } from "@/hooks/CustomLoading";
+import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Bell,
@@ -29,8 +29,8 @@ import {
   Users,
 } from "lucide-react";
 import { useState } from "react";
-import { useSelector } from "react-redux";
 import toast from "react-hot-toast";
+import { useSelector } from "react-redux";
 
 /* ── Types ─────────────────────────────────────────────────── */
 interface Notification {
@@ -73,10 +73,7 @@ export default function NotificationPage() {
   const role = useSelector((s: { auth: { role: string | null } }) => s.auth.role);
   const permissions = useSelector((s: { auth: { permissions: string[] } }) => s.auth.permissions);
 
-  const { data, isLoading, isError } = useGetAllNotificationQuery(
-    { page },
-    { pollingInterval: 5000 }
-  );
+  const { data, isLoading, isError } = useGetAllNotificationQuery({ page });
   const [readNotification] = useReadNotificationMutation();
   const [readAllNotification, { isLoading: isMarkingAll }] = useReadAllNotificationMutation();
 

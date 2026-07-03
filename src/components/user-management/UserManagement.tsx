@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -96,6 +97,9 @@ export default function UserManagement() {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [localStatus, setLocalStatus] = useState("active");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [kycFilter, setKycFilter] = useState("all");
+  const [searchTerm, setSearchTerm] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [isReviewOpen, setIsReviewOpen] = useState(false);
@@ -106,7 +110,7 @@ export default function UserManagement() {
   const [updateStatus, { isLoading: isStatusUpdating }] = useUpdateStatusMutation();
   const [deleteAccount, { isLoading: isDeleting }] = useDeleteAccountMutation();
 
-  const { data: customerData, isLoading, isError } = useGetCustomarQuery({ page, limit: 10 }, { pollingInterval: 3000 });
+  const { data: customerData, isLoading, isError } = useGetCustomarQuery({ page, limit: 10 });
   useMarkPageSeen("customer", customerData?.pagination?.total);
   const { isNew, dismiss, dismissAll } = useNewItemsTracker(
     "customer",
@@ -120,8 +124,17 @@ export default function UserManagement() {
   const newCount = customers.filter((u: User) => isNew(u._id)).length;
   const pagination = customerData?.pagination || { total: 0, limit: 10, page: 1, totalPage: 1 };
 
-  /* filter rows (defaulting to all since tabs are currently hidden) */
-  const filtered = customers;
+  const filtered = customers.filter((c) => {
+    const query = searchTerm.trim().toLowerCase();
+    const matchesSearch = query
+      ? [c.firstName, c.lastName, c.email, c.uid, c.phone]
+        .filter(Boolean)
+        .some((value) => value.toLowerCase().includes(query))
+      : true;
+    const matchesStatus = statusFilter === "all" || c.status.toLowerCase() === statusFilter;
+    const matchesKyc = kycFilter === "all" || c.isVerified === (kycFilter === "verified");
+    return matchesSearch && matchesStatus && matchesKyc;
+  });
 
   const TOTAL = pagination.total;
   const PER_PAGE = pagination.limit;
@@ -131,6 +144,8 @@ export default function UserManagement() {
   const dynamicStats = [
     { label: "Total users", value: TOTAL.toLocaleString(), icon: CalendarCheck, iconBg: "#E8F5E9", iconColor: "#2B9724" },
     { label: "Active Now", value: customers.filter((c: User) => c.status === 'active').length.toString(), icon: CalendarCheck, iconBg: "#E8F5E9", iconColor: "#2B9724" },
+    { label: "Verified KYC", value: customers.filter((c: User) => c.isVerified).length.toString(), icon: ShieldCheck, iconBg: "#E8F5E9", iconColor: "#2B9724" },
+    { label: "Unverified KYC", value: customers.filter((c: User) => !c.isVerified).length.toString(), icon: AlertTriangle, iconBg: "#FEE2E2", iconColor: "#DC3545" },
   ];
 
   const handleViewDetails = (user: User) => {
@@ -233,6 +248,57 @@ export default function UserManagement() {
             <MarkAllSeenButton count={newCount} onClick={() => dismissAll()} />
           </div>
 
+          <div className="px-6 pb-4">
+            <div className="grid gap-3 md:grid-cols-[1.4fr_0.9fr_0.9fr]">
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="user-search">Search</Label>
+                <Input
+                  id="user-search"
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                  placeholder="Search by name, email, UID, or phone"
+                  className="h-11"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="user-status-filter">Status</Label>
+                <Select
+                  value={statusFilter}
+                  onValueChange={(value) => setStatusFilter(value)}
+                >
+                  <SelectTrigger id="user-status-filter" className="h-11 py-5 w-full text-sm rounded-lg border"
+                    style={{ borderColor: "#F2F2F2", backgroundColor: "#FAFAFA", color: "#2C2E33" }}>
+                    <SelectValue placeholder="All Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                    <SelectItem value="suspended">Suspended</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="user-kyc-filter">KYC Verified</Label>
+                <Select
+                  value={kycFilter}
+                  onValueChange={(value) => setKycFilter(value)}
+                >
+                  <SelectTrigger id="user-kyc-filter" className="h-11 py-5 w-full text-sm rounded-lg border"
+                    style={{ borderColor: "#F2F2F2", backgroundColor: "#FAFAFA", color: "#2C2E33" }}>
+                    <SelectValue placeholder="All KYC" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All KYC</SelectItem>
+                    <SelectItem value="verified">Verified</SelectItem>
+                    <SelectItem value="unverified">Unverified</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
           {/* Table */}
           <div className="overflow-x-auto">
             <Table>
@@ -243,6 +309,9 @@ export default function UserManagement() {
                   </TableHead>
                   <TableHead className="text-xs font-semibold" style={{ color: "#6C757D" }}>
                     Status
+                  </TableHead>
+                  <TableHead className="text-xs font-semibold" style={{ color: "#6C757D" }}>
+                    KYC Verified
                   </TableHead>
                   <TableHead className="text-xs font-semibold" style={{ color: "#6C757D" }}>
                     Join Date
@@ -291,6 +360,13 @@ export default function UserManagement() {
 
                     {/* Status */}
                     <TableCell><StatusBadge status={c.status} /></TableCell>
+                    <TableCell>
+                      <span
+                        className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${c.isVerified ? "bg-[#E8F5E9] text-[#2B9724]" : "bg-[#FEE2E2] text-[#DC3545]"}`}
+                      >
+                        {c.isVerified ? "Verified" : "Unverified"}
+                      </span>
+                    </TableCell>
 
                     {/* Join Date */}
                     <TableCell>
@@ -330,7 +406,7 @@ export default function UserManagement() {
 
                 {filtered.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-12 text-sm" style={{ color: "#6C757D" }}>
+                    <TableCell colSpan={6} className="text-center py-12 text-sm" style={{ color: "#6C757D" }}>
                       No customers found.
                     </TableCell>
                   </TableRow>

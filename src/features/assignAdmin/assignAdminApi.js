@@ -30,6 +30,14 @@ export const assignAdminApi = baseApi.injectEndpoints({
       invalidatesTags: ["assignAdmin"],
     }),
 
+    deleteUser: builder.mutation({
+      query: (userId) => ({
+        url: `/users/${userId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["assignAdmin"],
+    }),
+
   }),
 });
 
@@ -38,4 +46,5 @@ export const {
   useGetAllAdminQuery,
   useAssignAdminMutation,
   useUpdateAssignUserMutation,
+  useDeleteUserMutation,
 } = assignAdminApi;
