@@ -117,9 +117,7 @@ function HotelDetailModal({
   const [localFeatured, setLocalFeatured] = useState(hotel?.isFeatured ?? false);
   const [updateStatus, { isLoading: isUpdating }] = useUpdateStatusMutation();
 
-  if (!hotel) return null;
-
-  const images = hotel.images ?? [];
+  const images = hotel?.images ?? [];
 
   const prevImg = () => setActiveImg((i) => (i - 1 + images.length) % images.length);
   const nextImg = () => setActiveImg((i) => (i + 1) % images.length);
@@ -130,7 +128,7 @@ function HotelDetailModal({
   }, [hotel]);
 
   const handleUpdate = async () => {
-    const propId = hotel?._id ?? (hotel as any)?.uid ?? undefined;
+    const propId = hotel?._id ?? hotel?.uid;
     if (!propId) {
       toast.error("Missing property id. Can't update status.");
       return;
@@ -148,6 +146,8 @@ function HotelDetailModal({
       toast.error(e?.data?.message || "Failed to update status");
     }
   };
+
+  if (!hotel) return null;
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) { onClose(); setActiveImg(0); } }}>
