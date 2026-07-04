@@ -38,7 +38,7 @@ import {
   XCircle,
 } from "lucide-react";
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import { CustomLoading } from "../../hooks/CustomLoading";
 
@@ -124,10 +124,21 @@ function HotelDetailModal({
   const prevImg = () => setActiveImg((i) => (i - 1 + images.length) % images.length);
   const nextImg = () => setActiveImg((i) => (i + 1) % images.length);
 
+  useEffect(() => {
+    setLocalStatus(hotel?.status ?? "active");
+    setLocalFeatured(hotel?.isFeatured ?? false);
+  }, [hotel]);
+
   const handleUpdate = async () => {
+    const propId = hotel?._id ?? (hotel as any)?.uid ?? undefined;
+    if (!propId) {
+      toast.error("Missing property id. Can't update status.");
+      return;
+    }
+
     try {
       await updateStatus({
-        propertyId: hotel._id,
+        propertyId: propId,
         data: { status: localStatus, isFeatured: localFeatured },
       }).unwrap();
       toast.success("Status updated successfully!");
