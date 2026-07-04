@@ -134,7 +134,12 @@ export default function UserManagement() {
   const [updateStatus, { isLoading: isStatusUpdating }] = useUpdateStatusMutation();
   const [deleteAccount, { isLoading: isDeleting }] = useDeleteAccountMutation();
 
-  const { data: customerData, isLoading, isError } = useGetCustomarQuery({ page, limit: 10 });
+  const { data: customerData, isLoading, isError } = useGetCustomarQuery({
+    page,
+    limit: 10,
+    searchTerm: searchTerm || undefined,
+    status: statusFilter !== "all" ? statusFilter : undefined,
+  });
   useMarkPageSeen("customer", customerData?.pagination?.total);
   const { isNew, dismiss, dismissAll } = useNewItemsTracker(
     "customer",
@@ -149,21 +154,12 @@ export default function UserManagement() {
   const pagination = customerData?.pagination || { total: 0, limit: 10, page: 1, totalPage: 1 };
 
   const filtered = customers.filter((c) => {
-    const query = searchTerm.trim().toLowerCase();
-    const matchesSearch = query
-      ? [c.firstName, c.lastName, c.email, c.uid, c.phone]
-        .filter(Boolean)
-        .some((value) => value.toLowerCase().includes(query))
-      : true;
-    const matchesStatus = statusFilter === "all" || c.status.toLowerCase() === statusFilter;
     const kycStatus = getKycStatus(c);
-    const matchesKyc =
-      kycFilter === "all"
-        ? true
-        : kycFilter === "unverified"
+    return kycFilter === "all"
+      ? true
+      : kycFilter === "unverified"
         ? kycStatus !== "verified"
         : kycStatus === kycFilter;
-    return matchesSearch && matchesStatus && matchesKyc;
   });
 
   const TOTAL = pagination.total;
@@ -171,11 +167,14 @@ export default function UserManagement() {
   const LAST_PG = pagination.totalPage;
   const PAGES = Array.from({ length: LAST_PG }, (_, i) => i + 1);
 
+  const pendingCount = customers.filter((c: User) => getKycStatus(c) === "pending").length.toString();
+
   const dynamicStats = [
     { label: "Total users", value: TOTAL.toLocaleString(), icon: CalendarCheck, iconBg: "#E8F5E9", iconColor: "#2B9724" },
+    { label: "Pending KYC", value: pendingCount, icon: AlertTriangle, iconBg: "#FEF3C7", iconColor: "#D97706" },
     { label: "Verified KYC", value: customers.filter((c: User) => getKycStatus(c) === "verified").length.toString(), icon: ShieldCheck, iconBg: "#E8F5E9", iconColor: "#2B9724" },
     { label: "Rejected KYC", value: customers.filter((c: User) => getKycStatus(c) === "rejected").length.toString(), icon: AlertTriangle, iconBg: "#FEE2E2", iconColor: "#DC3545" },
-    { label: "Unverified KYC", value: customers.filter((c: User) => getKycStatus(c) !== "verified").length.toString(), icon: AlertTriangle, iconBg: "#FEE2E2", iconColor: "#DC3545" },
+    { label: "Unverified KYC", value: customers.filter((c: User) => getKycStatus(c) !== "verified" && getKycStatus(c) !== "pending").length.toString(), icon: AlertTriangle, iconBg: "#FEE2E2", iconColor: "#DC3545" },
   ];
 
   const handleViewDetails = (user: User) => {
@@ -239,7 +238,7 @@ export default function UserManagement() {
     <div className="space-y-6">
 
       {/* ── Stat Cards ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         {dynamicStats.map((s, i) => {
           const Icon = s.icon;
           return (
@@ -285,7 +284,10 @@ export default function UserManagement() {
                 <Input
                   id="user-search"
                   value={searchTerm}
-                  onChange={(event) => setSearchTerm(event.target.value)}
+                  onChange={(event) => {
+                    setPage(1);
+                    setSearchTerm(event.target.value);
+                  }}
                   placeholder="Search by name, email, UID, or phone"
                   className="h-11"
                 />
@@ -294,7 +296,10 @@ export default function UserManagement() {
                 <Label htmlFor="user-status-filter">Status</Label>
                 <Select
                   value={statusFilter}
-                  onValueChange={(value) => setStatusFilter(value)}
+                  onValueChange={(value) => {
+                    setPage(1);
+                    setStatusFilter(value);
+                  }}
                 >
                   <SelectTrigger id="user-status-filter" className="h-11 py-5 w-full text-sm rounded-lg border"
                     style={{ borderColor: "#F2F2F2", backgroundColor: "#FAFAFA", color: "#2C2E33" }}>

@@ -137,7 +137,12 @@ export default function PartnerManagement() {
   const [updateStatus, { isLoading: isStatusUpdating }] = useUpdateStatusMutation();
   const [deleteAccount, { isLoading: isDeleting }] = useDeleteAccountMutation();
 
-  const { data: partnerData, isLoading, isError } = useGetPartnerQuery({ page, limit: 10 });
+  const { data: partnerData, isLoading, isError } = useGetPartnerQuery({
+    page,
+    limit: 10,
+    searchTerm: searchTerm || undefined,
+    status: statusFilter !== "all" ? statusFilter : undefined,
+  });
   useMarkPageSeen("partner", partnerData?.pagination?.total);
   const { isNew, dismiss, dismissAll } = useNewItemsTracker(
     "partner",
@@ -152,21 +157,12 @@ export default function PartnerManagement() {
   const pagination = partnerData?.pagination || { total: 0, limit: 10, page: 1, totalPage: 1 };
 
   const filtered = partners.filter((p) => {
-    const query = searchTerm.trim().toLowerCase();
-    const matchesSearch = query
-      ? [p.firstName, p.lastName, p.email, p.uid, p.phone]
-        .filter(Boolean)
-        .some((value) => value.toLowerCase().includes(query))
-      : true;
-    const matchesStatus = statusFilter === "all" || p.status.toLowerCase() === statusFilter;
     const kycStatus = getKycStatus(p);
-    const matchesKyc =
-      kycFilter === "all"
-        ? true
-        : kycFilter === "unverified"
+    return kycFilter === "all"
+      ? true
+      : kycFilter === "unverified"
         ? kycStatus !== "verified"
         : kycStatus === kycFilter;
-    return matchesSearch && matchesStatus && matchesKyc;
   });
 
   const TOTAL = pagination.total;
@@ -174,11 +170,14 @@ export default function PartnerManagement() {
   const LAST_PG = pagination.totalPage;
   const PAGES = Array.from({ length: LAST_PG }, (_, i) => i + 1);
 
+  const pendingCount = partners.filter((p: Partner) => getKycStatus(p) === "pending").length.toString();
+
   const dynamicStats = [
     { label: "Total Partners", value: TOTAL.toLocaleString(), icon: CalendarCheck, bgColor: "#E8F5E9", color: "#2B9724" },
+    { label: "Pending KYC", value: pendingCount, icon: AlertTriangle, bgColor: "#FEF3C7", color: "#D97706" },
     { label: "Verified KYC", value: partners.filter((p: Partner) => getKycStatus(p) === "verified").length.toString(), icon: ShieldCheck, bgColor: "#E8F5E9", color: "#2B9724" },
     { label: "Rejected KYC", value: partners.filter((p: Partner) => getKycStatus(p) === "rejected").length.toString(), icon: AlertTriangle, bgColor: "#FEE2E2", color: "#DC3545" },
-    { label: "Unverified KYC", value: partners.filter((p: Partner) => getKycStatus(p) !== "verified").length.toString(), icon: AlertTriangle, bgColor: "#FEE2E2", color: "#DC3545" },
+    { label: "Unverified KYC", value: partners.filter((p: Partner) => getKycStatus(p) !== "verified" && getKycStatus(p) !== "pending").length.toString(), icon: AlertTriangle, bgColor: "#FEE2E2", color: "#DC3545" },
   ];
 
   const handleViewDetails = (partner: Partner) => {
@@ -242,7 +241,7 @@ export default function PartnerManagement() {
     <div className="space-y-6">
 
       {/* ── Stat Cards ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         {dynamicStats.map((s, i) => {
           const Icon = s.icon;
           return (
@@ -288,7 +287,10 @@ export default function PartnerManagement() {
                 <Input
                   id="partner-search"
                   value={searchTerm}
-                  onChange={(event) => setSearchTerm(event.target.value)}
+                  onChange={(event) => {
+                    setPage(1);
+                    setSearchTerm(event.target.value);
+                  }}
                   placeholder="Search by name, email, UID, or phone"
                   className="h-11"
                 />
@@ -297,7 +299,10 @@ export default function PartnerManagement() {
                 <Label htmlFor="partner-status-filter">Status</Label>
                 <Select
                   value={statusFilter}
-                  onValueChange={(value) => setStatusFilter(value)}
+                  onValueChange={(value) => {
+                    setPage(1);
+                    setStatusFilter(value);
+                  }}
                 >
                   <SelectTrigger id="partner-status-filter" className="h-11 py-5 w-full text-sm rounded-lg border"
                     style={{ borderColor: "#F2F2F2", backgroundColor: "#FAFAFA", color: "#2C2E33" }}>
