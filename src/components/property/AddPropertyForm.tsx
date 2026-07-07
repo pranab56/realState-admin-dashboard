@@ -195,7 +195,7 @@ export default function AddPropertyForm({
   const [addressInput, setAddressInput] = useState(
     initialData?.address
       ? [initialData.address.street, initialData.address.city, initialData.address.country]
-          .filter(Boolean).join(", ")
+        .filter(Boolean).join(", ")
       : ""
   );
   const [suggestions, setSuggestions] = useState<GooglePrediction[]>([]);
@@ -249,7 +249,7 @@ export default function AddPropertyForm({
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "X-Goog-Api-Key": process.env.NEXT_GOOGLE_MAPS_API_KEY!,
+            "X-Goog-Api-Key": process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KE!,
           },
           body: JSON.stringify({ input: val }),
         });
@@ -276,7 +276,7 @@ export default function AddPropertyForm({
         `https://places.googleapis.com/v1/places/${item.placeId}`,
         {
           headers: {
-            "X-Goog-Api-Key": process.env.NEXT_GOOGLE_MAPS_API_KEY!,
+            "X-Goog-Api-Key": process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KE!,
             "X-Goog-FieldMask": "addressComponents,location,formattedAddress",
           },
         }
