@@ -16,7 +16,6 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-  type ValueType,
 } from "recharts";
 
 interface LineChartProps {
@@ -91,7 +90,7 @@ export default function LineChart({ revenueGrowth = [] }: LineChartProps) {
                   padding: "8px 14px",
                   fontSize: "13px",
                 }}
-                formatter={(value: ValueType) => {
+                formatter={(value: unknown) => {
                   const num = typeof value === "number" ? value : Number(value ?? 0);
                   return [`$ ${num.toLocaleString()}`, "Revenue"];
                 }}
