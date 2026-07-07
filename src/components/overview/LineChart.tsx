@@ -90,7 +90,10 @@ export default function LineChart({ revenueGrowth = [] }: LineChartProps) {
                   padding: "8px 14px",
                   fontSize: "13px",
                 }}
-                formatter={(value: number) => [`$ ${value.toLocaleString()}`, "Revenue"]}
+                formatter={(value: any, name?: any) => {
+                  const num = Number(value ?? 0);
+                  return [`$ ${num.toLocaleString()}`, "Revenue"];
+                }}
                 cursor={{ stroke: "#F1913D", strokeWidth: 1, strokeDasharray: "4 4" }}
               />
 

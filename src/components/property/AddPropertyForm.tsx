@@ -249,7 +249,7 @@ export default function AddPropertyForm({
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "X-Goog-Api-Key": process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
+            "X-Goog-Api-Key": process.env.NEXT_GOOGLE_MAPS_API_KEY!,
           },
           body: JSON.stringify({ input: val }),
         });
@@ -276,7 +276,7 @@ export default function AddPropertyForm({
         `https://places.googleapis.com/v1/places/${item.placeId}`,
         {
           headers: {
-            "X-Goog-Api-Key": process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
+            "X-Goog-Api-Key": process.env.NEXT_GOOGLE_MAPS_API_KEY!,
             "X-Goog-FieldMask": "addressComponents,location,formattedAddress",
           },
         }
