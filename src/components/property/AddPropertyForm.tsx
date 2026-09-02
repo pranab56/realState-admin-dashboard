@@ -244,12 +244,13 @@ export default function AddPropertyForm({
 
     debounceRef.current = setTimeout(async () => {
       setIsSearching(true);
+      const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "AIzaSyDvyXEPwnivXtNrB-CLUjATna2Ws2igkT4";
       try {
         const res = await fetch("https://places.googleapis.com/v1/places:autocomplete", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "X-Goog-Api-Key": process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
+            "X-Goog-Api-Key": apiKey,
           },
           body: JSON.stringify({ input: val }),
         });
@@ -271,12 +272,13 @@ export default function AddPropertyForm({
     setSuggestions([]);
     setShowDropdown(false);
     setIsSearching(true);
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "AIzaSyDvyXEPwnivXtNrB-CLUjATna2Ws2igkT4";
     try {
       const res = await fetch(
         `https://places.googleapis.com/v1/places/${item.placeId}`,
         {
           headers: {
-            "X-Goog-Api-Key": process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
+            "X-Goog-Api-Key": apiKey,
             "X-Goog-FieldMask": "addressComponents,location,formattedAddress",
           },
         }
