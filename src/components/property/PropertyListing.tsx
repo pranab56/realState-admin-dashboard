@@ -155,7 +155,7 @@ function PropertyDetailModal({ prop, open, onClose }: { prop: Property | null; o
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) { onClose(); setActiveImg(0); } }}>
-      <DialogContent className="max-w-3xl max-h-[90vh] border border-red-500 overflow-y-auto p-0 gap-0 rounded-2xl">
+      <DialogContent className="max-w-3xl max-h-[90vh]  overflow-y-auto p-0 gap-0 rounded-2xl">
 
         {/* ── Image Gallery ── */}
         {images.length > 0 ? (
