@@ -12,12 +12,8 @@ const geistSans = Geist({
 
 
 export const metadata: Metadata = {
-  title: "Real State Admin Dashboard",
-  description: "Real State Admin Dashboard",
-  icons: {
-    icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
-  },
-  manifest: "/site.webmanifest",
+  title: "Zila Homes Admin Dashboard",
+  description: "Zila Homes Admin Dashboard",
 };
 
 export default function RootLayout({
@@ -27,10 +23,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <head>
-        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-        <link rel="manifest" href="/site.webmanifest" />
-      </head>
       <body
         className={`${geistSans.variable}  antialiased h-screen`}
       >

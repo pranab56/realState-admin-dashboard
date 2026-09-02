@@ -49,7 +49,7 @@ export const managePropertyApi = baseApi.injectEndpoints({
       invalidatesTags: ["property"],
     }),
 
-    updateStatus: builder.mutation({
+    updatePropertyStatus: builder.mutation({
       query: ({ propertyId, data }) => ({
         url: `/properties/${propertyId}`,
         method: "PATCH",
@@ -68,5 +68,5 @@ export const {
   useGetManageListingQuery,
   useGetManageHotelsQuery,
   useDeletePropertyMutation,
-  useUpdateStatusMutation
+  useUpdatePropertyStatusMutation
 } = managePropertyApi;

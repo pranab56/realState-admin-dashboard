@@ -249,7 +249,7 @@ export default function AddPropertyForm({
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "X-Goog-Api-Key": process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KE!,
+            "X-Goog-Api-Key": process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
           },
           body: JSON.stringify({ input: val }),
         });
@@ -276,7 +276,7 @@ export default function AddPropertyForm({
         `https://places.googleapis.com/v1/places/${item.placeId}`,
         {
           headers: {
-            "X-Goog-Api-Key": process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KE!,
+            "X-Goog-Api-Key": process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
             "X-Goog-FieldMask": "addressComponents,location,formattedAddress",
           },
         }
@@ -412,6 +412,17 @@ export default function AddPropertyForm({
   const handleCancel = () => { if (onCancel) onCancel(); else router.push("/property-management/listing"); };
   const addressFilled = !!(street || city || country);
   const totalImageCount = existingImages.length + imagePreviews.length;
+  const isFormValid =
+    !!title.trim() &&
+    !!description.trim() &&
+    !!price.trim() &&
+    !!totalArea.trim() &&
+    !!landArea.trim() &&
+    !!availableFrom.trim() &&
+    amenities.length > 0 &&
+    (addressFilled || !!addressInput.trim()) &&
+    landmarks.some((lm) => lm.name.trim() !== "") &&
+    totalImageCount > 0;
 
   return (
     <div className="w-full flex flex-col h-full">
@@ -791,9 +802,9 @@ export default function AddPropertyForm({
           style={{ borderColor: "#F2F2F2", color: "#2C2E33" }}>
           Cancel
         </Button>
-        <Button onClick={handleSubmit} disabled={isLoading}
-          className="h-11 px-8 rounded-lg text-sm font-semibold cursor-pointer shadow-lg shadow-orange-100 flex items-center gap-2"
-          style={{ backgroundColor: "#F1913D", color: "#FFFFFF" }}>
+        <Button onClick={handleSubmit} disabled={isLoading || !isFormValid}
+          className="h-11 px-8 rounded-lg text-sm font-semibold flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+          style={{ backgroundColor: isFormValid && !isLoading ? "#F1913D" : "#CCCCCC", color: "#FFFFFF" }}>
           {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
           {isLoading
             ? (isEditMode ? "Updating..." : "Creating...")

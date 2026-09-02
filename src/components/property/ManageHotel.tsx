@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/table";
 import {
   useGetManageHotelsQuery,
-  useUpdateStatusMutation,
+  useUpdatePropertyStatusMutation,
 } from "@/features/manageProperty/managePropertyApi";
 import { baseURL } from "@/utils/BaseURL";
 import {
@@ -115,7 +115,7 @@ function HotelDetailModal({
   const [activeImg, setActiveImg] = useState(0);
   const [localStatus, setLocalStatus] = useState(hotel?.status ?? "active");
   const [localFeatured, setLocalFeatured] = useState(hotel?.isFeatured ?? false);
-  const [updateStatus, { isLoading: isUpdating }] = useUpdateStatusMutation();
+  const [updatePropertyStatus, { isLoading: isUpdating }] = useUpdatePropertyStatusMutation();
 
   const images = hotel?.images ?? [];
 
@@ -128,14 +128,14 @@ function HotelDetailModal({
   }, [hotel]);
 
   const handleUpdate = async () => {
-    const propId = hotel?._id ?? hotel?.uid;
+    const propId = hotel?._id ?? (hotel as unknown as { id?: string })?.id ?? hotel?.uid;
     if (!propId) {
       toast.error("Missing property id. Can't update status.");
       return;
     }
 
     try {
-      await updateStatus({
+      await updatePropertyStatus({
         propertyId: propId,
         data: { status: localStatus, isFeatured: localFeatured },
       }).unwrap();

@@ -8,14 +8,9 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import "../globals.css";
 
 export const metadata: Metadata = {
-  title: "Real Estate Admin Dashboard",
-  description: "Real Estate Admin Dashboard for Future Pharmacy",
-  icons: {
-    icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
-  },
-  manifest: "/site.webmanifest",
+  title: "Zila Homes Admin Dashboard",
+  description: "Zila Homes Admin Dashboard",
 };
-// dsfsdfsdfs
 export default function RootLayout({
   children,
 }: Readonly<{
