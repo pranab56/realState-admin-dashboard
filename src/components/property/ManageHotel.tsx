@@ -152,7 +152,6 @@ function HotelDetailModal({
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) { onClose(); setActiveImg(0); } }}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-0 gap-0 rounded-2xl">
-
         {/* Image Gallery */}
         {images.length > 0 ? (
           <div className="relative w-full bg-gray-900 overflow-hidden rounded-t-2xl" style={{ height: "450px" }}>

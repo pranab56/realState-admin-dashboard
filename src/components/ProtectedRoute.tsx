@@ -64,6 +64,5 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
       }
     }
   }, [router, pathname, role, permissions]);
-
   return <>{children}</>;
-}
+};
